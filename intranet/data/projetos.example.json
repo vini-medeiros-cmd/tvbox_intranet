@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "nome": "Projeto de exemplo",
+    "status": "planejado",
+    "prazo": "2026-12-31",
+    "descricao": "Descrição do projeto",
+    "link": "",
+    "notas": "",
+    "criado_em": "2026-01-01T00:00:00",
+    "modificado_em": "2026-01-01T00:00:00"
+  }
+]

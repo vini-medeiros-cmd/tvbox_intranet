@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intranet</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="header">
+  <h1><span>Intranet</span></h1>
+  <div class="relogio" id="relogio">--:--:--</div>
+</div>
+
+<!-- ATALHOS -->
+<div class="section">
+  <div class="section-title">Atalhos</div>
+  <div class="atalhos-grid" id="gridAtalhos"></div>
+</div>
+
+<!-- SENHAS -->
+<div class="section">
+  <div class="section-title">Senhas</div>
+  <div class="senhas-toolbar">
+    <button class="btn btn-primary" id="btnNovaSenha">+ Nova senha</button>
+  </div>
+  <div class="senhas-lista" id="listaSenhas"></div>
+</div>
+
+<!-- INFRA TVBOX -->
+<div class="section">
+  <div class="section-title">Infra do TVBOX</div>
+  <div class="infra-grid" id="gridInfra"></div>
+</div>
+
+<!-- PROJETOS -->
+<div class="section">
+  <div class="section-title">Projetos</div>
+  <div class="projetos-toolbar">
+    <input type="text" id="filtroProjetos" placeholder="Filtrar por nome ou descrição...">
+    <select id="filtroStatus">
+      <option value="todos">Todos os status</option>
+      <option value="planejado">Planejado</option>
+      <option value="fazendo">Fazendo</option>
+      <option value="pendente">Pendente</option>
+      <option value="concluido">Concluído</option>
+    </select>
+    <button class="btn btn-primary" id="btnNovoProjeto">+ Novo projeto</button>
+  </div>
+  <div class="projetos-grid" id="gridProjetos"></div>
+  <div class="arquivados-toggle" id="toggleArquivados">Mostrar concluídos ▾</div>
+  <div class="projetos-grid" id="gridArquivados" style="display:none; margin-top:12px;"></div>
+</div>
+
+<!-- MODAL PROJETO -->
+<div class="modal-overlay hidden" id="modalProjeto">
+  <div class="modal">
+    <h2 id="modalProjetoTitulo">Novo projeto</h2>
+    <form id="formProjeto">
+      <div class="campo"><label>Nome</label><input type="text" id="campoNome" required></div>
+      <div class="campo"><label>Status</label>
+        <select id="campoStatus">
+          <option value="planejado">Planejado</option>
+          <option value="fazendo">Fazendo</option>
+          <option value="pendente">Pendente</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
+      <div class="campo"><label>Prazo</label><input type="date" id="campoPrazo" required></div>
+      <div class="campo"><label>Descrição</label><input type="text" id="campoDescricao"></div>
+      <div class="campo"><label>Link (repo/pasta, opcional)</label><input type="text" id="campoLink"></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn" id="btnCancelarProjeto">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL ATALHO -->
+<div class="modal-overlay hidden" id="modalAtalho">
+  <div class="modal">
+    <h2 id="modalAtalhoTitulo">Novo atalho</h2>
+    <form id="formAtalho">
+      <div class="campo"><label>Nome</label><input type="text" id="campoAtalhoNome" required></div>
+      <div class="campo"><label>URL</label><input type="text" id="campoAtalhoUrl" required placeholder="https://..."></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn" id="btnCancelarAtalho">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL SENHA -->
+<div class="modal-overlay hidden" id="modalSenha">
+  <div class="modal">
+    <h2 id="modalSenhaTitulo">Nova senha</h2>
+    <form id="formSenha">
+      <div class="campo"><label>Site/Serviço</label><input type="text" id="campoSenhaSite" required></div>
+      <div class="campo"><label>Usuário</label><input type="text" id="campoSenhaUsuario"></div>
+      <div class="campo"><label>Senha</label><input type="text" id="campoSenhaValor" required></div>
+      <div class="campo"><label>Notas (opcional)</label><input type="text" id="campoSenhaNotas"></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn" id="btnCancelarSenha">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

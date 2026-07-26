@@ -1,0 +1,5 @@
+data/*.json
+!data/*.example.json
+data/backups/
+__pycache__/
+*.pyc

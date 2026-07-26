@@ -1,0 +1,6 @@
+{
+  "adguard_url": "http://localhost:3000",
+  "adguard_user": "admin",
+  "adguard_pass": "sua_senha_aqui",
+  "tailscale_check_host": "100.100.100.100"
+}
