@@ -48,7 +48,7 @@
     </select>
     <button class="btn btn-primary" id="btnNovoProjeto">+ Novo projeto</button>
   </div>
-  <div class="projetos-grid" id="gridProjetos"></div>
+  <div class="projetos-lista" id="gridProjetos"></div>
   <div class="arquivados-toggle" id="toggleArquivados">Mostrar concluídos ▾</div>
   <div class="projetos-grid" id="gridArquivados" style="display:none; margin-top:12px;"></div>
 </div>
@@ -59,6 +59,10 @@
     <h2 id="modalProjetoTitulo">Novo projeto</h2>
     <form id="formProjeto">
       <div class="campo"><label>Nome</label><input type="text" id="campoNome" required></div>
+      <div class="campo"><label>Grupo (opcional)</label>
+        <input type="text" id="campoGrupo" list="listaGrupos" placeholder="ex: Faixa 1">
+        <datalist id="listaGrupos"></datalist>
+      </div>
       <div class="campo"><label>Status</label>
         <select id="campoStatus">
           <option value="planejado">Planejado</option>

@@ -169,6 +169,27 @@ a { color: var(--primary-strong); }
 
 .projeto-acoes { display: flex; gap: 4px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
 
+.projetos-lista { display: flex; flex-direction: column; gap: 14px; }
+.grupo-titulo {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.grupo-titulo:hover { color: var(--primary-strong); }
+.grupo-titulo::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .empty-state {
   grid-column: 1/-1;
   text-align: center;

@@ -87,11 +87,53 @@ async function salvarProjetos() {
     mostrarToast('Erro ao salvar', true);
   }
 }
+const gruposRecolhidos = new Set();
+function agruparPorGrupo(lista) {
+  const semGrupo = lista.filter(p => !p.grupo || !p.grupo.trim());
+  const comGrupo = lista.filter(p => p.grupo && p.grupo.trim());
+  const nomesGrupos = [...new Set(comGrupo.map(p => p.grupo.trim()))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  return {
+    semGrupo,
+    grupos: nomesGrupos.map(nome => ({ nome, itens: comGrupo.filter(p => p.grupo.trim() === nome) }))
+  };
+}
+function renderizarGridComGrupos(container, lista, msgVazio) {
+  container.innerHTML = '';
+  if (lista.length === 0) {
+    container.appendChild(criarEmptyState(msgVazio));
+    return;
+  }
+  const { semGrupo, grupos } = agruparPorGrupo(lista);
+
+  if (semGrupo.length) {
+    const subGrid = el('div', { class: 'projetos-grid' });
+    semGrupo.forEach(p => subGrid.appendChild(criarCardProjeto(p)));
+    container.appendChild(subGrid);
+  }
+
+  grupos.forEach(({ nome, itens }) => {
+    const recolhido = gruposRecolhidos.has(nome);
+    const subGrid = el('div', { class: 'projetos-grid', style: recolhido ? 'display:none' : '' });
+    itens.forEach(p => subGrid.appendChild(criarCardProjeto(p)));
+
+    const titulo = el('div', {
+      class: 'grupo-titulo',
+      onclick: () => {
+        if (gruposRecolhidos.has(nome)) gruposRecolhidos.delete(nome);
+        else gruposRecolhidos.add(nome);
+        renderizarProjetos();
+      }
+    }, [`${recolhido ? '▸' : '▾'} ${nome} (${itens.length})`]);
+
+    container.appendChild(titulo);
+    container.appendChild(subGrid);
+  });
+}
 function renderizarProjetos() {
   const termo = document.getElementById('filtroProjetos').value.toLowerCase().trim();
   const statusFiltro = document.getElementById('filtroStatus').value;
   const filtrados = projetos.filter(p =>
-    (!termo || p.nome.toLowerCase().includes(termo) || (p.descricao || '').toLowerCase().includes(termo)) &&
+    (!termo || p.nome.toLowerCase().includes(termo) || (p.descricao || '').toLowerCase().includes(termo) || (p.grupo || '').toLowerCase().includes(termo)) &&
     (statusFiltro === 'todos' || p.status === statusFiltro)
   );
 
@@ -102,9 +144,7 @@ function renderizarProjetos() {
   if (statusFiltro !== 'todos') {
     // com filtro de status ativo, mostra tudo numa lista só (sem separar arquivados)
     const ordenados = filtrados.sort((a, b) => a.prazo.localeCompare(b.prazo));
-    gridAtivos.innerHTML = '';
-    if (ordenados.length === 0) gridAtivos.appendChild(criarEmptyState('Nenhum projeto encontrado.'));
-    ordenados.forEach(p => gridAtivos.appendChild(criarCardProjeto(p)));
+    renderizarGridComGrupos(gridAtivos, ordenados, 'Nenhum projeto encontrado.');
     gridArq.innerHTML = '';
     gridArq.style.display = 'none';
     toggleArq.style.display = 'none';
@@ -115,9 +155,7 @@ function renderizarProjetos() {
   const ativos = filtrados.filter(p => p.status !== 'concluido').sort((a, b) => a.prazo.localeCompare(b.prazo));
   const concluidos = filtrados.filter(p => p.status === 'concluido').sort((a, b) => b.prazo.localeCompare(a.prazo));
 
-  gridAtivos.innerHTML = '';
-  if (ativos.length === 0) gridAtivos.appendChild(criarEmptyState('Nenhum projeto encontrado.'));
-  ativos.forEach(p => gridAtivos.appendChild(criarCardProjeto(p)));
+  renderizarGridComGrupos(gridAtivos, ativos, 'Nenhum projeto encontrado.');
 
   gridArq.innerHTML = '';
   concluidos.forEach(p => gridArq.appendChild(criarCardProjeto(p)));
@@ -200,10 +238,17 @@ function abrirModalProjeto(p) {
   editandoId = p ? p.id : null;
   document.getElementById('modalProjetoTitulo').textContent = p ? 'Editar projeto' : 'Novo projeto';
   document.getElementById('campoNome').value = p ? p.nome : '';
+  document.getElementById('campoGrupo').value = p ? (p.grupo || '') : '';
   document.getElementById('campoStatus').value = p ? p.status : 'planejado';
   document.getElementById('campoPrazo').value = p ? p.prazo : '';
   document.getElementById('campoDescricao').value = p ? (p.descricao || '') : '';
   document.getElementById('campoLink').value = p ? (p.link || '') : '';
+
+  const gruposExistentes = [...new Set(projetos.map(x => (x.grupo || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const listaGrupos = document.getElementById('listaGrupos');
+  listaGrupos.innerHTML = '';
+  gruposExistentes.forEach(g => listaGrupos.appendChild(el('option', { value: g })));
+
   modalProjeto.classList.remove('hidden');
   setTimeout(() => document.getElementById('campoNome').focus(), 50);
 }
@@ -211,6 +256,7 @@ document.getElementById('formProjeto').addEventListener('submit', (e) => {
   e.preventDefault();
   const dados = {
     nome: document.getElementById('campoNome').value.trim(),
+    grupo: document.getElementById('campoGrupo').value.trim(),
     status: document.getElementById('campoStatus').value,
     prazo: document.getElementById('campoPrazo').value,
     descricao: document.getElementById('campoDescricao').value.trim(),

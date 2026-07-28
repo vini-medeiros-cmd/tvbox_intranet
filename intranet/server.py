@@ -22,7 +22,7 @@ PORT = 8080
 
 CONFIG = json.loads((DATA_DIR / "config.json").read_text(encoding="utf-8"))
 
-CAMPOS_PROJETO = ("nome", "status", "prazo", "descricao", "link", "notas")
+CAMPOS_PROJETO = ("nome", "grupo", "status", "prazo", "descricao", "link", "notas")
 
 
 def ler_json(nome):
