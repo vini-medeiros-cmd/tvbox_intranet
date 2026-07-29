@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Servidor local da intranet — só biblioteca padrão, sem pip/venv (pensado pro hardware fraco do TVBOX)."""
+"""Servidor local"""
 import http.cookiejar
 import json
 import shutil
@@ -16,7 +16,7 @@ DATA_DIR = BASE_DIR / "data"
 STATIC_DIR = BASE_DIR / "static"
 BACKUP_DIR = DATA_DIR / "backups"
 BACKUP_DIR.mkdir(exist_ok=True)
-BACKUP_INTERVALO_MIN = 15 * 60  # só cria novo backup se o último tiver mais de 15min
+BACKUP_INTERVALO_MIN = 15 * 60
 BACKUP_MANTER = 5
 PORT = 8080
 
@@ -50,7 +50,7 @@ def gravar_json(nome, dados):
 
 
 def com_timestamps(projetos_novos):
-    """Carimba criado_em/modificado_em comparando com o que já está salvo."""
+    """criado_em/modificado_em com o que já está salvo."""
     antigos = {p["id"]: p for p in ler_json("projetos.json")}
     agora = datetime.now().isoformat(timespec="seconds")
     for p in projetos_novos:
@@ -128,7 +128,7 @@ def checar_sistema():
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
-        pass  # silencia log padrão no console
+        pass
 
     def _enviar_json(self, dados, status=200):
         corpo = json.dumps(dados, ensure_ascii=False).encode("utf-8")
