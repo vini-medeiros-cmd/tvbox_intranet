@@ -74,7 +74,7 @@ a { color: var(--primary-strong); }
   background: var(--border);
 }
 
-/* CARD BASE */
+/* CARD */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -280,7 +280,7 @@ a { color: var(--primary-strong); }
 }
 .atalho-card-novo:hover { border-color: var(--primary); background: var(--surface-hover); color: var(--foreground); }
 
-/* SENHAS */
+/* PASSWORD */
 .senhas-toolbar { margin-bottom: 14px; }
 .senhas-lista { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .senha-linha {
