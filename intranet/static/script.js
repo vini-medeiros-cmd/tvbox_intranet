@@ -12,7 +12,7 @@ let projetos = [];
 let atalhos = [];
 let editandoId = null;
 
-// ESC fecha qualquer modal aberto
+// ESC
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
@@ -22,7 +22,7 @@ function criarEmptyState(msg) {
   return el('div', { class: 'empty-state' }, [msg]);
 }
 
-// ===================== RELÓGIO =====================
+// === RELÓGIO ===
 function atualizarRelogio() {
   const agora = new Date();
   const opcoes = { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' };
@@ -31,7 +31,7 @@ function atualizarRelogio() {
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();
 
-// ===================== HELPERS =====================
+// === HELPERS ===
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
   Object.entries(props).forEach(([k, v]) => {
@@ -55,7 +55,7 @@ function formatarDataCurta(iso) {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
 
-// ===================== TOAST =====================
+// === TOAST ===
 let toastTimer;
 function mostrarToast(msg, erro = false) {
   let toast = document.getElementById('toast');
@@ -70,7 +70,7 @@ function mostrarToast(msg, erro = false) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-// ===================== PROJETOS =====================
+// === PROJETOS ===
 async function carregarProjetos() {
   const res = await fetch('/api/projetos');
   projetos = await res.json();
@@ -142,7 +142,7 @@ function renderizarProjetos() {
   const toggleArq = document.getElementById('toggleArquivados');
 
   if (statusFiltro !== 'todos') {
-    // com filtro de status ativo, mostra tudo numa lista só (sem separar arquivados)
+    // Filtro de status ativo
     const ordenados = filtrados.sort((a, b) => a.prazo.localeCompare(b.prazo));
     renderizarGridComGrupos(gridAtivos, ordenados, 'Nenhum projeto encontrado.');
     gridArq.innerHTML = '';
@@ -230,7 +230,7 @@ document.getElementById('toggleArquivados').addEventListener('click', () => {
   grid.style.display = grid.style.display === 'none' ? 'grid' : 'none';
 });
 
-// Modal Projeto
+// MODAL PROJETOS
 const modalProjeto = document.getElementById('modalProjeto');
 document.getElementById('btnNovoProjeto').addEventListener('click', () => abrirModalProjeto(null));
 document.getElementById('btnCancelarProjeto').addEventListener('click', () => modalProjeto.classList.add('hidden'));
@@ -274,7 +274,7 @@ document.getElementById('formProjeto').addEventListener('submit', (e) => {
   modalProjeto.classList.add('hidden');
 });
 
-// ===================== INFRA TVBOX =====================
+// === INFRA ===
 async function carregarInfra() {
   const grid = document.getElementById('gridInfra');
   grid.innerHTML = '';
@@ -310,7 +310,7 @@ function criarCardInfraInfo(nome, valor) {
   return card;
 }
 
-// ===================== SENHAS =====================
+// === PASSWORD ===
 let senhas = [];
 let senhaEditandoId = null;
 
@@ -407,7 +407,7 @@ document.getElementById('formSenha').addEventListener('submit', (e) => {
   e.target.reset();
 });
 
-// ===================== ATALHOS =====================
+// === ATALHOS ===
 async function carregarAtalhos() {
   const res = await fetch('/api/atalhos');
   atalhos = await res.json();
@@ -497,7 +497,7 @@ document.getElementById('formAtalho').addEventListener('submit', (e) => {
   e.target.reset();
 });
 
-// ===================== INIT =====================
+// === INIT ===
 carregarAtalhos();
 carregarSenhas();
 carregarInfra();
