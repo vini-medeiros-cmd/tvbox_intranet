@@ -41,7 +41,7 @@ Acesse em `http://localhost:8080`.
 ## O que tem na intranet
 
 - **Atalhos** — grade de links rápidos, com editar/mover/excluir
-- **Senhas** — lista simples de credenciais (sem criptografia — ver aviso abaixo)
+- **Senhas** — lista simples de credenciais
 - **Infra** — status ao vivo de serviços, tempo ligado e espaço em disco do host
 - **Projetos** — quadro com status, prazo, notas e filtro, com arquivamento automático dos concluídos
 
