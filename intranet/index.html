@@ -13,44 +13,156 @@
   <div class="relogio" id="relogio">--:--:--</div>
 </div>
 
-<!-- ATALHOS -->
-<div class="section">
-  <div class="section-title">Atalhos</div>
-  <div class="atalhos-grid" id="gridAtalhos"></div>
-</div>
+<nav class="tabs" id="tabsNav">
+  <button class="tab-btn active" data-view="inicio">Início</button>
+  <button class="tab-btn" data-view="projetos">Projetos</button>
+  <!-- Controle Financeiro oculto a pedido do usuário — gestão feita direto na planilha -->
+  <button class="tab-btn" data-view="vagas">Gestão de Vagas</button>
+</nav>
 
-<!-- PASSWORD -->
-<div class="section">
-  <div class="section-title">Senhas</div>
-  <div class="senhas-toolbar">
-    <button class="btn btn-primary" id="btnNovaSenha">+ Nova senha</button>
+<div class="view" id="viewInicio">
+
+  <!-- ATALHOS -->
+  <div class="section">
+    <div class="section-title">Atalhos</div>
+    <div class="atalhos-grid" id="gridAtalhos"></div>
   </div>
-  <div class="senhas-lista" id="listaSenhas"></div>
-</div>
 
-<!-- INFRA -->
-<div class="section">
-  <div class="section-title">Infra do TVBOX</div>
-  <div class="infra-grid" id="gridInfra"></div>
-</div>
-
-<!-- PROJETOS -->
-<div class="section">
-  <div class="section-title">Projetos</div>
-  <div class="projetos-toolbar">
-    <input type="text" id="filtroProjetos" placeholder="Filtrar por nome ou descrição...">
-    <select id="filtroStatus">
-      <option value="todos">Todos os status</option>
-      <option value="planejado">Planejado</option>
-      <option value="fazendo">Fazendo</option>
-      <option value="pendente">Pendente</option>
-      <option value="concluido">Concluído</option>
-    </select>
-    <button class="btn btn-primary" id="btnNovoProjeto">+ Novo projeto</button>
+  <!-- PASSWORD -->
+  <div class="section">
+    <div class="section-title">Senhas</div>
+    <div class="senhas-toolbar">
+      <button class="btn btn-primary" id="btnNovaSenha">+ Nova senha</button>
+    </div>
+    <div class="senhas-lista" id="listaSenhas"></div>
   </div>
-  <div class="projetos-lista" id="gridProjetos"></div>
-  <div class="arquivados-toggle" id="toggleArquivados">Mostrar concluídos ▾</div>
-  <div class="projetos-grid" id="gridArquivados" style="display:none; margin-top:12px;"></div>
+
+  <!-- INFRA -->
+  <div class="section">
+    <div class="section-title">Infra do TVBOX</div>
+    <div class="infra-grid" id="gridInfra"></div>
+  </div>
+
+</div>
+
+<div class="view hidden" id="viewProjetos">
+
+  <!-- PROJETOS -->
+  <div class="section">
+    <div class="section-title">Projetos</div>
+    <div class="projetos-toolbar">
+      <input type="text" id="filtroProjetos" placeholder="Filtrar por nome ou descrição...">
+      <select id="filtroStatus">
+        <option value="todos">Todos os status</option>
+        <option value="planejado">Planejado</option>
+        <option value="fazendo">Fazendo</option>
+        <option value="pendente">Pendente</option>
+        <option value="concluido">Concluído</option>
+      </select>
+      <button class="btn btn-primary" id="btnNovoProjeto">+ Novo projeto</button>
+    </div>
+    <div class="projetos-lista" id="gridProjetos"></div>
+    <div class="arquivados-toggle" id="toggleArquivados">Mostrar concluídos ▾</div>
+    <div class="projetos-grid" id="gridArquivados" style="display:none; margin-top:12px;"></div>
+  </div>
+
+</div>
+
+<div class="view hidden" id="viewFinancas">
+
+  <!-- FINANCAS -->
+  <div class="section">
+    <div class="section-title">Controle Financeiro</div>
+    <div class="projetos-toolbar">
+      <input type="text" id="filtroFinancas" placeholder="Filtrar por descrição...">
+      <select id="filtroMesFinancas">
+        <option value="todos">Todos os meses</option>
+      </select>
+      <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
+    </div>
+    <div class="tabela tabela-financas">
+      <div class="tabela-cabecalho">
+        <span>Mês/Ano</span><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Entrada</span><span>Saída</span><span></span>
+      </div>
+      <div id="listaFinancas"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="view hidden" id="viewVagas">
+
+  <!-- VAGAS -->
+  <div class="section">
+    <div class="section-title">Gestão de Vagas</div>
+    <div class="projetos-toolbar">
+      <input type="text" id="filtroVagas" placeholder="Filtrar por empresa ou vaga...">
+      <select id="filtroStatusVaga">
+        <option value="todos">Todos os status</option>
+      </select>
+      <button class="btn btn-primary" id="btnNovaVaga">+ Nova candidatura</button>
+    </div>
+    <div class="tabela tabela-vagas">
+      <div class="tabela-cabecalho">
+        <span>Empresa</span><span>Vaga</span><span>Data</span><span>Canal</span><span>Status</span><span></span>
+      </div>
+      <div id="listaVagas"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL LANCAMENTO -->
+<div class="modal-overlay hidden" id="modalLancamento">
+  <div class="modal">
+    <h2 id="modalLancamentoTitulo">Novo lançamento</h2>
+    <form id="formLancamento">
+      <div class="campo"><label>Mês/Ano</label><input type="text" id="campoLancMes" placeholder="ex: Agosto/2026" required></div>
+      <div class="campo"><label>Descrição</label><input type="text" id="campoLancDescricao" required></div>
+      <div class="campo"><label>Tipo</label>
+        <select id="campoLancTipo">
+          <option value="Receita">Receita</option>
+          <option value="Despesa">Despesa</option>
+        </select>
+      </div>
+      <div class="campo"><label>Categoria</label>
+        <input type="text" id="campoLancCategoria" list="listaCategorias" required>
+        <datalist id="listaCategorias"></datalist>
+      </div>
+      <div class="campo"><label>Entrada (R$)</label><input type="text" id="campoLancEntrada" placeholder="ex: R$ 100.00"></div>
+      <div class="campo"><label>Saída (R$)</label><input type="text" id="campoLancSaida" placeholder="ex: R$ 50.00"></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn" id="btnCancelarLancamento">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VAGA -->
+<div class="modal-overlay hidden" id="modalVaga">
+  <div class="modal">
+    <h2 id="modalVagaTitulo">Nova candidatura</h2>
+    <form id="formVaga">
+      <div class="campo"><label>Empresa</label><input type="text" id="campoVagaEmpresa" required></div>
+      <div class="campo"><label>Vaga</label><input type="text" id="campoVagaTitulo2" required></div>
+      <div class="campo"><label>Data da candidatura</label><input type="text" id="campoVagaData" placeholder="dd/mm/aaaa"></div>
+      <div class="campo"><label>Canal</label>
+        <input type="text" id="campoVagaCanal" list="listaCanais">
+        <datalist id="listaCanais"></datalist>
+      </div>
+      <div class="campo"><label>Link/Contato</label><input type="text" id="campoVagaLink"></div>
+      <div class="campo"><label>Status</label>
+        <input type="text" id="campoVagaStatus" list="listaStatusVaga">
+        <datalist id="listaStatusVaga"></datalist>
+      </div>
+      <div class="campo"><label>Observações</label><input type="text" id="campoVagaObs"></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn" id="btnCancelarVaga">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- MODAL PROJETO -->

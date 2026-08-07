@@ -22,6 +22,17 @@ function criarEmptyState(msg) {
   return el('div', { class: 'empty-state' }, [msg]);
 }
 
+// === ABAS ===
+const VIEWS = { inicio: 'viewInicio', projetos: 'viewProjetos', financas: 'viewFinancas', vagas: 'viewVagas' };
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById(VIEWS[btn.dataset.view]).classList.remove('hidden');
+  });
+});
+
 // === RELÓGIO ===
 function atualizarRelogio() {
   const agora = new Date();
@@ -40,7 +51,7 @@ function el(tag, props = {}, children = []) {
     else if (k === 'html') node.innerHTML = v;
     else node.setAttribute(k, v);
   });
-  children.forEach(c => node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+  children.forEach(c => node.appendChild(c instanceof Node ? c : document.createTextNode(String(c))));
   return node;
 }
 function formatarData(dataStr) {
@@ -53,6 +64,19 @@ function debounce(fn, ms) {
 }
 function formatarDataCurta(iso) {
   return new Date(iso).toLocaleDateString('pt-BR');
+}
+function formatarDataPlanilha(valor) {
+  if (!valor) return '';
+  const d = new Date(valor);
+  if (isNaN(d.getTime()) || typeof valor !== 'string' || !valor.includes('-')) return valor;
+  return d.toLocaleDateString('pt-BR');
+}
+const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+function normalizarMesAno(valor) {
+  if (typeof valor !== 'string' || !valor.includes('T')) return valor;
+  const d = new Date(valor);
+  if (isNaN(d.getTime())) return valor;
+  return `${NOMES_MESES[d.getUTCMonth()]}/${d.getUTCFullYear()}`;
 }
 
 // === TOAST ===
@@ -497,8 +521,264 @@ document.getElementById('formAtalho').addEventListener('submit', (e) => {
   e.target.reset();
 });
 
+// ===================== CONTROLE FINANCEIRO =====================
+let financas = [];
+let lancEditandoLinha = null;
+
+async function carregarFinancas() {
+  const lista = document.getElementById('listaFinancas');
+  const res = await fetch('/api/financas');
+  const dados = await res.json();
+  if (dados && dados.erro) {
+    lista.innerHTML = '';
+    lista.appendChild(criarEmptyState('Erro: ' + dados.erro));
+    return;
+  }
+  financas = dados.map(f => ({ ...f, 'Mes/Ano': normalizarMesAno(f['Mes/Ano']) }));
+  popularSelectMeses();
+  document.getElementById('listaCategorias').innerHTML =
+    [...new Set(financas.map(f => f['Categoria']).filter(Boolean))].map(c => `<option value="${c}">`).join('');
+  renderizarFinancas();
+}
+function popularSelectMeses() {
+  const select = document.getElementById('filtroMesFinancas');
+  const atual = select.value;
+  const meses = [...new Set(financas.map(f => f['Mes/Ano']).filter(Boolean))];
+  select.innerHTML = '<option value="todos">Todos os meses</option>' + meses.map(m => `<option value="${m}">${m}</option>`).join('');
+  select.value = atual || 'todos';
+}
+async function salvarLancamento(dados, linha) {
+  try {
+    const body = linha ? { action: 'update', dados, _linha: linha } : { action: 'append', dados };
+    const res = await fetch('/api/financas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const resultado = await res.json();
+    if (resultado.erro) throw new Error(resultado.erro);
+    mostrarToast('Salvo ✓');
+    carregarFinancas();
+  } catch (e) {
+    mostrarToast('Erro ao salvar: ' + e.message, true);
+  }
+}
+async function excluirLancamento(f) {
+  if (!confirm(`Excluir o lançamento "${f['Descricao'] || ''}"?`)) return;
+  try {
+    const res = await fetch('/api/financas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', _linha: f._linha }) });
+    const resultado = await res.json();
+    if (resultado.erro) throw new Error(resultado.erro);
+    mostrarToast('Excluído ✓');
+    carregarFinancas();
+  } catch (e) {
+    mostrarToast('Erro ao excluir: ' + e.message, true);
+  }
+}
+function renderizarFinancas() {
+  const termo = document.getElementById('filtroFinancas').value.toLowerCase().trim();
+  const mes = document.getElementById('filtroMesFinancas').value;
+  const filtrados = financas.filter(f =>
+    (!termo || (f['Descricao'] || '').toLowerCase().includes(termo)) &&
+    (mes === 'todos' || f['Mes/Ano'] === mes)
+  );
+  const lista = document.getElementById('listaFinancas');
+  lista.innerHTML = '';
+  if (filtrados.length === 0) {
+    lista.appendChild(criarEmptyState('Nenhum lançamento encontrado.'));
+    return;
+  }
+  filtrados.slice().reverse().forEach(f => lista.appendChild(criarLinhaFinanca(f)));
+}
+function criarLinhaFinanca(f) {
+  const btnEditar = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+    onclick: (e) => { e.stopPropagation(); abrirModalLancamento(f); }
+  });
+  const btnExcluir = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+    onclick: (e) => { e.stopPropagation(); excluirLancamento(f); }
+  });
+  return el('div', { class: 'tabela-linha', onclick: () => abrirModalLancamento(f) }, [
+    el('span', {}, [f['Mes/Ano'] || '']),
+    el('span', { title: f['Descricao'] || '' }, [f['Descricao'] || '']),
+    el('span', {}, [f['Tipo'] || '']),
+    el('span', {}, [f['Categoria'] || '']),
+    el('span', { class: 'valor-entrada' }, [f['Entrada (R$)'] || '']),
+    el('span', { class: 'valor-saida' }, [f['Saida (R$)'] || '']),
+    el('span', { class: 'tabela-acoes' }, [btnEditar, btnExcluir])
+  ]);
+}
+document.getElementById('filtroFinancas').addEventListener('input', renderizarFinancas);
+document.getElementById('filtroMesFinancas').addEventListener('change', renderizarFinancas);
+const modalLancamento = document.getElementById('modalLancamento');
+document.getElementById('btnNovoLancamento').addEventListener('click', () => abrirModalLancamento(null));
+document.getElementById('btnCancelarLancamento').addEventListener('click', () => modalLancamento.classList.add('hidden'));
+function abrirModalLancamento(f) {
+  lancEditandoLinha = f ? f._linha : null;
+  document.getElementById('modalLancamentoTitulo').textContent = f ? 'Editar lançamento' : 'Novo lançamento';
+  document.getElementById('campoLancMes').value = f ? (f['Mes/Ano'] || '') : '';
+  document.getElementById('campoLancDescricao').value = f ? (f['Descricao'] || '') : '';
+  document.getElementById('campoLancTipo').value = f ? (f['Tipo'] || 'Despesa') : 'Despesa';
+  document.getElementById('campoLancCategoria').value = f ? (f['Categoria'] || '') : '';
+  document.getElementById('campoLancEntrada').value = f ? (f['Entrada (R$)'] || '') : '';
+  document.getElementById('campoLancSaida').value = f ? (f['Saida (R$)'] || '') : '';
+  modalLancamento.classList.remove('hidden');
+  setTimeout(() => document.getElementById('campoLancMes').focus(), 50);
+}
+document.getElementById('formLancamento').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const dados = {
+    'Mes/Ano': document.getElementById('campoLancMes').value.trim(),
+    'Descricao': document.getElementById('campoLancDescricao').value.trim(),
+    'Tipo': document.getElementById('campoLancTipo').value,
+    'Categoria': document.getElementById('campoLancCategoria').value.trim(),
+    'Entrada (R$)': document.getElementById('campoLancEntrada').value.trim(),
+    'Saida (R$)': document.getElementById('campoLancSaida').value.trim()
+  };
+  salvarLancamento(dados, lancEditandoLinha);
+  modalLancamento.classList.add('hidden');
+  e.target.reset();
+});
+
+// ===================== GESTAO DE VAGAS =====================
+let vagas = [];
+let vagaEditandoLinha = null;
+
+function statusClasse(status) {
+  const s = (status || '').toLowerCase();
+  if (s.includes('rejeit') || s.includes('não selecionado') || s.includes('nao selecionado') || s.includes('não elegível') || s.includes('encerrar')) return 'ruim';
+  if (s.includes('aguardando') || s.includes('pendente')) return 'espera';
+  if (s.includes('selecionado') || s.includes('aprovado') || s.includes('contratad')) return 'ok';
+  return 'neutro';
+}
+async function carregarVagas() {
+  const lista = document.getElementById('listaVagas');
+  const res = await fetch('/api/vagas');
+  const dados = await res.json();
+  if (dados && dados.erro) {
+    lista.innerHTML = '';
+    lista.appendChild(criarEmptyState('Erro: ' + dados.erro));
+    return;
+  }
+  vagas = dados;
+  const usados = vagas.map(v => v['Status']).filter(Boolean);
+  let statusList = [...new Set(usados)];
+  try {
+    const resOpcoes = await fetch('/api/vagas/status-opcoes');
+    const opcoes = await resOpcoes.json();
+    if (Array.isArray(opcoes) && opcoes.length && opcoes.every(o => typeof o === 'string')) {
+      statusList = [...new Set([...opcoes, ...usados])];
+    }
+  } catch (e) { /* segue só com os status já usados */ }
+  const select = document.getElementById('filtroStatusVaga');
+  const atual = select.value;
+  select.innerHTML = '<option value="todos">Todos os status</option>' + statusList.map(s => `<option value="${s}">${s}</option>`).join('');
+  select.value = atual || 'todos';
+  document.getElementById('listaCanais').innerHTML =
+    [...new Set(vagas.map(v => v['Canal']).filter(Boolean))].map(c => `<option value="${c}">`).join('');
+  document.getElementById('listaStatusVaga').innerHTML = statusList.map(s => `<option value="${s}">`).join('');
+  renderizarVagas();
+}
+async function salvarVaga(dados, linha) {
+  try {
+    const body = linha ? { action: 'update', dados, _linha: linha } : { action: 'append', dados };
+    const res = await fetch('/api/vagas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const resultado = await res.json();
+    if (resultado.erro) throw new Error(resultado.erro);
+    mostrarToast('Salvo ✓');
+    carregarVagas();
+  } catch (e) {
+    mostrarToast('Erro ao salvar: ' + e.message, true);
+  }
+}
+async function excluirVaga(v) {
+  if (!confirm(`Excluir a candidatura em "${v['Empresa'] || ''}"?`)) return;
+  try {
+    const res = await fetch('/api/vagas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', _linha: v._linha }) });
+    const resultado = await res.json();
+    if (resultado.erro) throw new Error(resultado.erro);
+    mostrarToast('Excluído ✓');
+    carregarVagas();
+  } catch (e) {
+    mostrarToast('Erro ao excluir: ' + e.message, true);
+  }
+}
+function renderizarVagas() {
+  const termo = document.getElementById('filtroVagas').value.toLowerCase().trim();
+  const status = document.getElementById('filtroStatusVaga').value;
+  const filtrados = vagas.filter(v =>
+    (!termo || (v['Empresa'] || '').toLowerCase().includes(termo) || (v['Vaga'] || '').toLowerCase().includes(termo)) &&
+    (status === 'todos' || v['Status'] === status)
+  );
+  const ordenados = filtrados.slice().sort((a, b) => {
+    const da = new Date(a['Candidatura']).getTime();
+    const db = new Date(b['Candidatura']).getTime();
+    return (isNaN(db) ? -Infinity : db) - (isNaN(da) ? -Infinity : da);
+  });
+  const lista = document.getElementById('listaVagas');
+  lista.innerHTML = '';
+  if (ordenados.length === 0) {
+    lista.appendChild(criarEmptyState('Nenhuma candidatura encontrada.'));
+    return;
+  }
+  ordenados.forEach(v => lista.appendChild(criarLinhaVaga(v)));
+}
+function criarLinhaVaga(v) {
+  const btnEditar = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+    onclick: (e) => { e.stopPropagation(); abrirModalVaga(v); }
+  });
+  const btnExcluir = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+    onclick: (e) => { e.stopPropagation(); excluirVaga(v); }
+  });
+  return el('div', { class: 'tabela-linha', onclick: () => abrirModalVaga(v) }, [
+    el('span', { title: v['Empresa'] || '' }, [v['Empresa'] || '']),
+    el('span', { title: v['Vaga'] || '' }, [v['Vaga'] || '']),
+    el('span', {}, [formatarDataPlanilha(v['Candidatura'])]),
+    el('span', {}, [v['Canal'] || '']),
+    el('span', {}, [
+      el('span', { class: `status-dot ${statusClasse(v['Status'])}` }),
+      v['Status'] || ''
+    ]),
+    el('span', { class: 'tabela-acoes' }, [btnEditar, btnExcluir])
+  ]);
+}
+document.getElementById('filtroVagas').addEventListener('input', renderizarVagas);
+document.getElementById('filtroStatusVaga').addEventListener('change', renderizarVagas);
+const modalVaga = document.getElementById('modalVaga');
+document.getElementById('btnNovaVaga').addEventListener('click', () => abrirModalVaga(null));
+document.getElementById('btnCancelarVaga').addEventListener('click', () => modalVaga.classList.add('hidden'));
+function abrirModalVaga(v) {
+  vagaEditandoLinha = v ? v._linha : null;
+  document.getElementById('modalVagaTitulo').textContent = v ? 'Editar candidatura' : 'Nova candidatura';
+  document.getElementById('campoVagaEmpresa').value = v ? (v['Empresa'] || '') : '';
+  document.getElementById('campoVagaTitulo2').value = v ? (v['Vaga'] || '') : '';
+  document.getElementById('campoVagaData').value = v ? formatarDataPlanilha(v['Candidatura']) : '';
+  document.getElementById('campoVagaCanal').value = v ? (v['Canal'] || '') : '';
+  document.getElementById('campoVagaLink').value = v ? (v['Link / Contato'] || '') : '';
+  document.getElementById('campoVagaStatus').value = v ? (v['Status'] || 'Aguardando retorno') : 'Aguardando retorno';
+  document.getElementById('campoVagaObs').value = v ? (v['Observações'] || '') : '';
+  modalVaga.classList.remove('hidden');
+  setTimeout(() => document.getElementById('campoVagaEmpresa').focus(), 50);
+}
+document.getElementById('formVaga').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const dados = {
+    'Empresa': document.getElementById('campoVagaEmpresa').value.trim(),
+    'Vaga': document.getElementById('campoVagaTitulo2').value.trim(),
+    'Candidatura': document.getElementById('campoVagaData').value.trim(),
+    'Canal': document.getElementById('campoVagaCanal').value.trim(),
+    'Link / Contato': document.getElementById('campoVagaLink').value.trim(),
+    'Status': document.getElementById('campoVagaStatus').value.trim(),
+    'Observações': document.getElementById('campoVagaObs').value.trim()
+  };
+  salvarVaga(dados, vagaEditandoLinha);
+  modalVaga.classList.add('hidden');
+  e.target.reset();
+});
+
 // === INIT ===
 carregarAtalhos();
 carregarSenhas();
 carregarInfra();
 carregarProjetos();
+// carregarFinancas(); — aba oculta a pedido do usuário, gestão feita direto na planilha
+carregarVagas();

@@ -2,5 +2,10 @@
   "adguard_url": "http://localhost:3000",
   "adguard_user": "admin",
   "adguard_pass": "sua_senha_aqui",
-  "tailscale_check_host": "100.100.100.100"
+  "tailscale_check_host": "100.100.100.100",
+  "sheets_token": "mesmo_token_do_apps_script",
+  "financas_script_url": "https://script.google.com/macros/s/AKfycb.../exec",
+  "financas_aba": "Lancamentos",
+  "vagas_script_url": "https://script.google.com/macros/s/AKfycb.../exec",
+  "vagas_aba": "Vagas"
 }

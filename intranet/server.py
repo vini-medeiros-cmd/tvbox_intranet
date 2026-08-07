@@ -6,6 +6,7 @@ import shutil
 import socket
 import subprocess
 import time
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -108,6 +109,50 @@ def checar_tailscale():
         return {"status": "offline", "detalhe": "Falha ao checar"}
 
 
+def sheets_ler(script_url, token, aba, linha_cabecalho=1):
+    if not script_url:
+        return {"erro": "planilha ainda não configurada"}
+    qs = urllib.parse.urlencode({"token": token, "aba": aba, "linhaCabecalho": linha_cabecalho})
+    try:
+        with urllib.request.urlopen(f"{script_url}?{qs}", timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+def sheets_opcoes_coluna(script_url, token, aba, coluna, linha_cabecalho=1):
+    if not script_url:
+        return {"erro": "planilha ainda não configurada"}
+    qs = urllib.parse.urlencode({
+        "token": token, "aba": aba, "opcoesColuna": coluna, "linhaCabecalho": linha_cabecalho,
+    })
+    try:
+        with urllib.request.urlopen(f"{script_url}?{qs}", timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+def sheets_escrever(script_url, token, aba, action, dados, linha=None, linha_cabecalho=1):
+    if not script_url:
+        return {"erro": "planilha ainda não configurada"}
+    payload = {"token": token, "aba": aba, "action": action, "dados": dados, "linhaCabecalho": linha_cabecalho}
+    if linha is not None:
+        payload["_linha"] = linha
+    body = json.dumps(payload).encode("utf-8")
+    # O Apps Script processa o POST na 1a resposta e redireciona (302) pra
+    # servir o resultado pronto — esse redirecionamento precisa ser um GET
+    # (comportamento padrão do urllib), não um POST de novo.
+    req = urllib.request.Request(
+        script_url, data=body, headers={"Content-Type": "application/json"}, method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        return {"erro": str(e)}
+
+
 def checar_sistema():
     try:
         with open("/proc/uptime") as f:
@@ -164,6 +209,22 @@ class Handler(BaseHTTPRequestHandler):
             self._enviar_json(ler_json("atalhos.json"))
         elif self.path == "/api/senhas":
             self._enviar_json(ler_json("senhas.json"))
+        elif self.path == "/api/financas":
+            self._enviar_json(sheets_ler(
+                CONFIG.get("financas_script_url", ""), CONFIG.get("sheets_token", ""),
+                CONFIG.get("financas_aba", "Lancamentos"),
+                CONFIG.get("financas_linha_cabecalho", 1),
+            ))
+        elif self.path == "/api/vagas":
+            self._enviar_json(sheets_ler(
+                CONFIG.get("vagas_script_url", ""), CONFIG.get("sheets_token", ""),
+                CONFIG.get("vagas_aba", "Vagas"),
+            ))
+        elif self.path == "/api/vagas/status-opcoes":
+            self._enviar_json(sheets_opcoes_coluna(
+                CONFIG.get("vagas_script_url", ""), CONFIG.get("sheets_token", ""),
+                CONFIG.get("vagas_aba", "Vagas"), "Status",
+            ))
         elif self.path == "/api/infra":
             self._enviar_json({
                 "adguard": checar_adguard(),
@@ -198,6 +259,19 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/api/senhas" and isinstance(dados, list):
             gravar_json("senhas.json", dados)
             self._enviar_json({"ok": True})
+        elif self.path == "/api/financas" and isinstance(dados, dict):
+            self._enviar_json(sheets_escrever(
+                CONFIG.get("financas_script_url", ""), CONFIG.get("sheets_token", ""),
+                CONFIG.get("financas_aba", "Lancamentos"),
+                dados.get("action"), dados.get("dados", {}), dados.get("_linha"),
+                CONFIG.get("financas_linha_cabecalho", 1),
+            ))
+        elif self.path == "/api/vagas" and isinstance(dados, dict):
+            self._enviar_json(sheets_escrever(
+                CONFIG.get("vagas_script_url", ""), CONFIG.get("sheets_token", ""),
+                CONFIG.get("vagas_aba", "Vagas"),
+                dados.get("action"), dados.get("dados", {}), dados.get("_linha"),
+            ))
         else:
             self.send_response(400)
             self.end_headers()
