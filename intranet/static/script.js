@@ -23,7 +23,7 @@ function criarEmptyState(msg) {
 }
 
 // === ABAS ===
-const VIEWS = { inicio: 'viewInicio', projetos: 'viewProjetos', financas: 'viewFinancas', vagas: 'viewVagas' };
+const VIEWS = { inicio: 'viewInicio', projetos: 'viewProjetos', prospeccao: 'viewProspeccao', financas: 'viewFinancas', vagas: 'viewVagas' };
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -775,10 +775,174 @@ document.getElementById('formVaga').addEventListener('submit', (e) => {
   e.target.reset();
 });
 
+// ===================== PROSPECCAO DE CLIENTES =====================
+let prospeccoes = [];
+let prospEditandoId = null;
+const STATUS_PROSPECCAO_KEY = {
+  'Não contatado': 'nao-contatado',
+  'Contatado': 'contatado',
+  'Em negociação': 'negociacao',
+  'Proposta enviada': 'proposta',
+  'Fechado': 'fechado',
+  'Recusado': 'recusado'
+};
+const PROSPECCAO_EXEMPLO = {
+  empresa: 'Padaria Exemplo Ltda', segmento: 'Alimentação', cidade: 'São Paulo/SP',
+  temSite: 'Não', temInstagram: 'Sim', link: 'instagram.com/padariaexemplo',
+  whatsapp: '(11) 99999-9999', email: 'contato@padariaexemplo.com',
+  status: 'Contatado', dataContato: '01/08/2026',
+  observacoes: 'Prospectado via Instagram, aguardando retorno.'
+};
+
+async function carregarProspeccao() {
+  const res = await fetch('/api/prospeccao');
+  prospeccoes = await res.json();
+  document.getElementById('listaSegmentos').innerHTML =
+    [...new Set(prospeccoes.map(p => p.segmento).filter(Boolean))].map(s => `<option value="${s}">`).join('');
+  renderizarProspeccao();
+}
+async function salvarProspeccao() {
+  try {
+    const res = await fetch('/api/prospeccao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prospeccoes) });
+    if (!res.ok) throw new Error();
+    mostrarToast('Salvo ✓');
+  } catch {
+    mostrarToast('Erro ao salvar', true);
+  }
+}
+function renderizarProspeccao() {
+  const termo = document.getElementById('filtroProspeccao').value.toLowerCase().trim();
+  const status = document.getElementById('filtroStatusProspeccao').value;
+  const filtrados = prospeccoes.filter(p =>
+    (!termo || (p.empresa || '').toLowerCase().includes(termo) || (p.segmento || '').toLowerCase().includes(termo) || (p.cidade || '').toLowerCase().includes(termo)) &&
+    (status === 'todos' || p.status === status)
+  );
+  const grid = document.getElementById('gridProspeccao');
+  grid.innerHTML = '';
+  grid.appendChild(criarCardExemploProspeccao());
+  if (filtrados.length === 0) {
+    grid.appendChild(criarEmptyState('Nenhuma prospecção encontrada.'));
+    return;
+  }
+  filtrados.forEach(p => grid.appendChild(criarCardProspeccao(p)));
+}
+function criarCardExemploProspeccao() {
+  const p = PROSPECCAO_EXEMPLO;
+  const key = STATUS_PROSPECCAO_KEY[p.status];
+  const card = el('div', { class: 'card projeto-card prospeccao-card prospeccao-exemplo', 'data-status': key }, [
+    el('span', { class: 'prospeccao-exemplo-tag' }, ['Exemplo — formato esperado'])
+  ]);
+  card.appendChild(el('div', { class: 'projeto-topo' }, [
+    el('div', { class: 'projeto-nome' }, [p.empresa]),
+    el('span', { class: `badge badge-prospeccao-${key}` }, [p.status])
+  ]));
+  card.appendChild(el('div', { class: 'projeto-prazo' }, [`${p.segmento} · ${p.cidade}`]));
+  card.appendChild(el('div', { class: 'projeto-desc' }, [`Site: ${p.temSite} · Instagram/GMN: ${p.temInstagram}`]));
+  card.appendChild(el('div', { class: 'projeto-meta' }, [`WhatsApp: ${p.whatsapp} · ${p.email}`]));
+  card.appendChild(el('div', { class: 'projeto-meta' }, [`1º contato: ${p.dataContato}`]));
+  card.appendChild(el('div', { class: 'projeto-desc' }, [p.observacoes]));
+  return card;
+}
+function criarCardProspeccao(p) {
+  const key = STATUS_PROSPECCAO_KEY[p.status] || 'nao-contatado';
+  const card = el('div', { class: 'card projeto-card prospeccao-card', 'data-status': key });
+
+  card.appendChild(el('div', { class: 'projeto-topo' }, [
+    el('div', { class: 'projeto-nome' }, [p.empresa || '']),
+    el('span', { class: `badge badge-prospeccao-${key}` }, [p.status || ''])
+  ]));
+  card.appendChild(el('div', { class: 'projeto-prazo' }, [`${p.segmento || '—'} · ${p.cidade || '—'}`]));
+  card.appendChild(el('div', { class: 'projeto-desc' }, [`Site: ${p.temSite || 'Não'} · Instagram/GMN: ${p.temInstagram || 'Não'}`]));
+
+  if (p.link) {
+    let url = p.link.trim();
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    card.appendChild(el('a', { class: 'projeto-link', href: url, target: '_blank', rel: 'noopener' }, [
+      el('span', { html: ICONS.link, class: 'icone-inline' }), 'Abrir link'
+    ]));
+  }
+
+  const contato = [p.whatsapp, p.email].filter(Boolean).join(' · ');
+  if (contato) card.appendChild(el('div', { class: 'projeto-meta' }, [contato]));
+  if (p.dataContato) card.appendChild(el('div', { class: 'projeto-meta' }, [`1º contato: ${p.dataContato}`]));
+  if (p.observacoes) card.appendChild(el('div', { class: 'projeto-desc', title: p.observacoes }, [p.observacoes]));
+
+  const btnEditar = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+    onclick: (e) => { e.stopPropagation(); abrirModalProspeccao(p); }
+  });
+  const btnExcluir = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+    onclick: (e) => {
+      e.stopPropagation();
+      if (confirm(`Excluir a prospecção de "${p.empresa}"?`)) {
+        prospeccoes = prospeccoes.filter(x => x.id !== p.id);
+        salvarProspeccao();
+        renderizarProspeccao();
+      }
+    }
+  });
+  card.appendChild(el('div', { class: 'projeto-acoes' }, [btnEditar, btnExcluir]));
+  card.addEventListener('click', () => abrirModalProspeccao(p));
+
+  return card;
+}
+document.getElementById('filtroProspeccao').addEventListener('input', renderizarProspeccao);
+document.getElementById('filtroStatusProspeccao').addEventListener('change', renderizarProspeccao);
+
+const modalProspeccao = document.getElementById('modalProspeccao');
+document.getElementById('btnNovaProspeccao').addEventListener('click', () => abrirModalProspeccao(null));
+document.getElementById('btnCancelarProspeccao').addEventListener('click', () => modalProspeccao.classList.add('hidden'));
+function abrirModalProspeccao(p) {
+  prospEditandoId = p ? p.id : null;
+  document.getElementById('modalProspeccaoTitulo').textContent = p ? 'Editar prospecção' : 'Nova prospecção';
+  document.getElementById('campoProspEmpresa').value = p ? (p.empresa || '') : '';
+  document.getElementById('campoProspSegmento').value = p ? (p.segmento || '') : '';
+  document.getElementById('campoProspCidade').value = p ? (p.cidade || '') : '';
+  document.getElementById('campoProspSite').value = p ? (p.temSite || 'Não') : 'Não';
+  document.getElementById('campoProspInsta').value = p ? (p.temInstagram || 'Não') : 'Não';
+  document.getElementById('campoProspLink').value = p ? (p.link || '') : '';
+  document.getElementById('campoProspWhatsapp').value = p ? (p.whatsapp || '') : '';
+  document.getElementById('campoProspEmail').value = p ? (p.email || '') : '';
+  document.getElementById('campoProspStatus').value = p ? (p.status || 'Não contatado') : 'Não contatado';
+  document.getElementById('campoProspData').value = p ? (p.dataContato || '') : '';
+  document.getElementById('campoProspObs').value = p ? (p.observacoes || '') : '';
+  modalProspeccao.classList.remove('hidden');
+  setTimeout(() => document.getElementById('campoProspEmpresa').focus(), 50);
+}
+document.getElementById('formProspeccao').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const dados = {
+    empresa: document.getElementById('campoProspEmpresa').value.trim(),
+    segmento: document.getElementById('campoProspSegmento').value.trim(),
+    cidade: document.getElementById('campoProspCidade').value.trim(),
+    temSite: document.getElementById('campoProspSite').value,
+    temInstagram: document.getElementById('campoProspInsta').value,
+    link: document.getElementById('campoProspLink').value.trim(),
+    whatsapp: document.getElementById('campoProspWhatsapp').value.trim(),
+    email: document.getElementById('campoProspEmail').value.trim(),
+    status: document.getElementById('campoProspStatus').value,
+    dataContato: document.getElementById('campoProspData').value.trim(),
+    observacoes: document.getElementById('campoProspObs').value.trim()
+  };
+  if (prospEditandoId) {
+    const p = prospeccoes.find(x => x.id === prospEditandoId);
+    Object.assign(p, dados);
+  } else {
+    const novoId = prospeccoes.length ? Math.max(...prospeccoes.map(x => x.id)) + 1 : 1;
+    prospeccoes.push({ id: novoId, ...dados });
+  }
+  salvarProspeccao();
+  renderizarProspeccao();
+  modalProspeccao.classList.add('hidden');
+  e.target.reset();
+});
+
 // === INIT ===
 carregarAtalhos();
 carregarSenhas();
 carregarInfra();
 carregarProjetos();
+carregarProspeccao();
 // carregarFinancas(); — aba oculta a pedido do usuário, gestão feita direto na planilha
 carregarVagas();

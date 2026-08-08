@@ -153,6 +153,29 @@ a { color: var(--primary-strong); }
 .projeto-card[data-status="pendente"]::before { background: var(--red); }
 .projeto-card[data-status="concluido"]::before { background: var(--green); }
 
+.prospeccao-card[data-status="nao-contatado"]::before { background: #666; }
+.prospeccao-card[data-status="contatado"]::before { background: var(--blue); }
+.prospeccao-card[data-status="negociacao"]::before { background: var(--amber); }
+.prospeccao-card[data-status="proposta"]::before { background: var(--primary); }
+.prospeccao-card[data-status="fechado"]::before { background: var(--green); }
+.prospeccao-card[data-status="recusado"]::before { background: var(--red); }
+.badge-prospeccao-nao-contatado { background: rgba(255,255,255,.1); color: var(--muted); }
+.badge-prospeccao-contatado { background: rgba(88,166,255,.15); color: var(--blue); }
+.badge-prospeccao-negociacao { background: rgba(227,179,65,.15); color: var(--amber); }
+.badge-prospeccao-proposta { background: var(--primary-tint); color: var(--primary-strong); }
+.badge-prospeccao-fechado { background: rgba(63,185,80,.15); color: var(--green); }
+.badge-prospeccao-recusado { background: rgba(248,81,73,.15); color: var(--red); }
+
+.prospeccao-exemplo {
+  border-color: rgba(227,179,65,.4);
+  background: rgba(227,179,65,.08);
+}
+.prospeccao-exemplo::before { background: var(--amber) !important; }
+.prospeccao-exemplo-tag {
+  font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--amber); margin-bottom: 4px; display: block;
+}
+
 .projeto-topo { display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 6px; }
 .projeto-nome { font-size: 0.9rem; font-weight: 600; }
 .badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }

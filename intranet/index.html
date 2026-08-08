@@ -16,6 +16,7 @@
 <nav class="tabs" id="tabsNav">
   <button class="tab-btn active" data-view="inicio">Início</button>
   <button class="tab-btn" data-view="projetos">Projetos</button>
+  <button class="tab-btn" data-view="prospeccao">Prospecção</button>
   <!-- Controle Financeiro oculto a pedido do usuário — gestão feita direto na planilha -->
   <button class="tab-btn" data-view="vagas">Gestão de Vagas</button>
 </nav>
@@ -64,6 +65,29 @@
     <div class="projetos-lista" id="gridProjetos"></div>
     <div class="arquivados-toggle" id="toggleArquivados">Mostrar concluídos ▾</div>
     <div class="projetos-grid" id="gridArquivados" style="display:none; margin-top:12px;"></div>
+  </div>
+
+</div>
+
+<div class="view hidden" id="viewProspeccao">
+
+  <!-- PROSPECCAO -->
+  <div class="section">
+    <div class="section-title">Prospecção de Clientes — Landing Pages</div>
+    <div class="projetos-toolbar">
+      <input type="text" id="filtroProspeccao" placeholder="Filtrar por empresa, segmento ou cidade...">
+      <select id="filtroStatusProspeccao">
+        <option value="todos">Todos os status</option>
+        <option value="Não contatado">Não contatado</option>
+        <option value="Contatado">Contatado</option>
+        <option value="Em negociação">Em negociação</option>
+        <option value="Proposta enviada">Proposta enviada</option>
+        <option value="Fechado">Fechado</option>
+        <option value="Recusado">Recusado</option>
+      </select>
+      <button class="btn btn-primary" id="btnNovaProspeccao">+ Nova prospecção</button>
+    </div>
+    <div class="projetos-lista" id="gridProspeccao"></div>
   </div>
 
 </div>
@@ -159,6 +183,49 @@
       <div class="campo"><label>Observações</label><input type="text" id="campoVagaObs"></div>
       <div class="modal-acoes">
         <button type="button" class="btn" id="btnCancelarVaga">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL PROSPECCAO -->
+<div class="modal-overlay hidden" id="modalProspeccao">
+  <div class="modal">
+    <h2 id="modalProspeccaoTitulo">Nova prospecção</h2>
+    <form id="formProspeccao">
+      <div class="campo"><label>Empresa</label><input type="text" id="campoProspEmpresa" required></div>
+      <div class="campo"><label>Segmento</label><input type="text" id="campoProspSegmento" list="listaSegmentos"><datalist id="listaSegmentos"></datalist></div>
+      <div class="campo"><label>Cidade</label><input type="text" id="campoProspCidade"></div>
+      <div class="campo"><label>Tem site?</label>
+        <select id="campoProspSite">
+          <option value="Não">Não</option>
+          <option value="Sim">Sim</option>
+        </select>
+      </div>
+      <div class="campo"><label>Tem Instagram/GMN?</label>
+        <select id="campoProspInsta">
+          <option value="Não">Não</option>
+          <option value="Sim">Sim</option>
+        </select>
+      </div>
+      <div class="campo"><label>Link</label><input type="text" id="campoProspLink" placeholder="site ou @instagram"></div>
+      <div class="campo"><label>WhatsApp</label><input type="text" id="campoProspWhatsapp"></div>
+      <div class="campo"><label>E-mail</label><input type="text" id="campoProspEmail"></div>
+      <div class="campo"><label>Status da abordagem</label>
+        <select id="campoProspStatus">
+          <option value="Não contatado">Não contatado</option>
+          <option value="Contatado">Contatado</option>
+          <option value="Em negociação">Em negociação</option>
+          <option value="Proposta enviada">Proposta enviada</option>
+          <option value="Fechado">Fechado</option>
+          <option value="Recusado">Recusado</option>
+        </select>
+      </div>
+      <div class="campo"><label>Data 1º contato</label><input type="text" id="campoProspData" placeholder="dd/mm/aaaa"></div>
+      <div class="campo"><label>Observações</label><input type="text" id="campoProspObs"></div>
+      <div class="modal-acoes">
+        <button type="button" class="btn" id="btnCancelarProspeccao">Cancelar</button>
         <button type="submit" class="btn btn-primary">Salvar</button>
       </div>
     </form>
