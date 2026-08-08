@@ -176,6 +176,11 @@ a { color: var(--primary-strong); }
   color: var(--amber); margin-bottom: 4px; display: block;
 }
 
+.prospeccao-toggle { font-size: 0.72rem; color: var(--muted); cursor: pointer; margin: 2px 0 6px; }
+.prospeccao-toggle:hover { color: var(--primary-strong); }
+.prospeccao-detalhes { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.prospeccao-detalhes.hidden { display: none; }
+
 .projeto-topo { display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 6px; }
 .projeto-nome { font-size: 0.9rem; font-weight: 600; }
 .badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }

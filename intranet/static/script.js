@@ -826,21 +826,45 @@ function renderizarProspeccao() {
   }
   filtrados.forEach(p => grid.appendChild(criarCardProspeccao(p)));
 }
+function criarDetalhesProspeccao(p) {
+  const detalhes = el('div', { class: 'prospeccao-detalhes hidden' });
+  detalhes.appendChild(el('div', { class: 'projeto-desc' }, [`Site: ${p.temSite || 'Não'} · Instagram/GMN: ${p.temInstagram || 'Não'}`]));
+  if (p.link) {
+    let url = p.link.trim();
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    detalhes.appendChild(el('a', { class: 'projeto-link', href: url, target: '_blank', rel: 'noopener' }, [
+      el('span', { html: ICONS.link, class: 'icone-inline' }), 'Abrir link'
+    ]));
+  }
+  const contato = [p.whatsapp, p.email].filter(Boolean).join(' · ');
+  if (contato) detalhes.appendChild(el('div', { class: 'projeto-meta' }, [contato]));
+  if (p.dataContato) detalhes.appendChild(el('div', { class: 'projeto-meta' }, [`1º contato: ${p.dataContato}`]));
+  if (p.observacoes) detalhes.appendChild(el('div', { class: 'projeto-desc' }, [p.observacoes]));
+  return detalhes;
+}
+function criarToggleDetalhes(detalhes) {
+  const toggle = el('div', { class: 'prospeccao-toggle' }, ['Ver detalhes ▾']);
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const aberto = detalhes.classList.toggle('hidden');
+    toggle.textContent = aberto ? 'Ver detalhes ▾' : 'Ocultar detalhes ▴';
+  });
+  return toggle;
+}
 function criarCardExemploProspeccao() {
   const p = PROSPECCAO_EXEMPLO;
   const key = STATUS_PROSPECCAO_KEY[p.status];
   const card = el('div', { class: 'card projeto-card prospeccao-card prospeccao-exemplo', 'data-status': key }, [
-    el('span', { class: 'prospeccao-exemplo-tag' }, ['Exemplo — formato esperado'])
+    el('span', { class: 'prospeccao-exemplo-tag' }, ['Exemplo'])
   ]);
   card.appendChild(el('div', { class: 'projeto-topo' }, [
     el('div', { class: 'projeto-nome' }, [p.empresa]),
     el('span', { class: `badge badge-prospeccao-${key}` }, [p.status])
   ]));
   card.appendChild(el('div', { class: 'projeto-prazo' }, [`${p.segmento} · ${p.cidade}`]));
-  card.appendChild(el('div', { class: 'projeto-desc' }, [`Site: ${p.temSite} · Instagram/GMN: ${p.temInstagram}`]));
-  card.appendChild(el('div', { class: 'projeto-meta' }, [`WhatsApp: ${p.whatsapp} · ${p.email}`]));
-  card.appendChild(el('div', { class: 'projeto-meta' }, [`1º contato: ${p.dataContato}`]));
-  card.appendChild(el('div', { class: 'projeto-desc' }, [p.observacoes]));
+  const detalhes = criarDetalhesProspeccao(p);
+  card.appendChild(criarToggleDetalhes(detalhes));
+  card.appendChild(detalhes);
   return card;
 }
 function criarCardProspeccao(p) {
@@ -852,29 +876,18 @@ function criarCardProspeccao(p) {
     el('span', { class: `badge badge-prospeccao-${key}` }, [p.status || ''])
   ]));
   card.appendChild(el('div', { class: 'projeto-prazo' }, [`${p.segmento || '—'} · ${p.cidade || '—'}`]));
-  card.appendChild(el('div', { class: 'projeto-desc' }, [`Site: ${p.temSite || 'Não'} · Instagram/GMN: ${p.temInstagram || 'Não'}`]));
 
-  if (p.link) {
-    let url = p.link.trim();
-    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-    card.appendChild(el('a', { class: 'projeto-link', href: url, target: '_blank', rel: 'noopener' }, [
-      el('span', { html: ICONS.link, class: 'icone-inline' }), 'Abrir link'
-    ]));
-  }
-
-  const contato = [p.whatsapp, p.email].filter(Boolean).join(' · ');
-  if (contato) card.appendChild(el('div', { class: 'projeto-meta' }, [contato]));
-  if (p.dataContato) card.appendChild(el('div', { class: 'projeto-meta' }, [`1º contato: ${p.dataContato}`]));
-  if (p.observacoes) card.appendChild(el('div', { class: 'projeto-desc', title: p.observacoes }, [p.observacoes]));
+  const detalhes = criarDetalhesProspeccao(p);
+  card.appendChild(criarToggleDetalhes(detalhes));
+  card.appendChild(detalhes);
 
   const btnEditar = el('button', {
     class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
-    onclick: (e) => { e.stopPropagation(); abrirModalProspeccao(p); }
+    onclick: () => abrirModalProspeccao(p)
   });
   const btnExcluir = el('button', {
     class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
-    onclick: (e) => {
-      e.stopPropagation();
+    onclick: () => {
       if (confirm(`Excluir a prospecção de "${p.empresa}"?`)) {
         prospeccoes = prospeccoes.filter(x => x.id !== p.id);
         salvarProspeccao();
@@ -883,7 +896,6 @@ function criarCardProspeccao(p) {
     }
   });
   card.appendChild(el('div', { class: 'projeto-acoes' }, [btnEditar, btnExcluir]));
-  card.addEventListener('click', () => abrirModalProspeccao(p));
 
   return card;
 }
