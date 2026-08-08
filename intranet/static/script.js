@@ -786,13 +786,6 @@ const STATUS_PROSPECCAO_KEY = {
   'Fechado': 'fechado',
   'Recusado': 'recusado'
 };
-const PROSPECCAO_EXEMPLO = {
-  empresa: 'Padaria Exemplo Ltda', segmento: 'Alimentação', cidade: 'São Paulo/SP',
-  temSite: 'Não', temInstagram: 'Sim', link: 'instagram.com/padariaexemplo',
-  whatsapp: '(11) 99999-9999', email: 'contato@padariaexemplo.com',
-  status: 'Contatado', dataContato: '01/08/2026',
-  observacoes: 'Prospectado via Instagram, aguardando retorno.'
-};
 
 async function carregarProspeccao() {
   const res = await fetch('/api/prospeccao');
@@ -819,7 +812,6 @@ function renderizarProspeccao() {
   );
   const grid = document.getElementById('gridProspeccao');
   grid.innerHTML = '';
-  grid.appendChild(criarCardExemploProspeccao());
   if (filtrados.length === 0) {
     grid.appendChild(criarEmptyState('Nenhuma prospecção encontrada.'));
     return;
@@ -850,22 +842,6 @@ function criarToggleDetalhes(detalhes) {
     toggle.textContent = aberto ? 'Ver detalhes ▾' : 'Ocultar detalhes ▴';
   });
   return toggle;
-}
-function criarCardExemploProspeccao() {
-  const p = PROSPECCAO_EXEMPLO;
-  const key = STATUS_PROSPECCAO_KEY[p.status];
-  const card = el('div', { class: 'card projeto-card prospeccao-card prospeccao-exemplo', 'data-status': key }, [
-    el('span', { class: 'prospeccao-exemplo-tag' }, ['Exemplo'])
-  ]);
-  card.appendChild(el('div', { class: 'projeto-topo' }, [
-    el('div', { class: 'projeto-nome' }, [p.empresa]),
-    el('span', { class: `badge badge-prospeccao-${key}` }, [p.status])
-  ]));
-  card.appendChild(el('div', { class: 'projeto-prazo' }, [`${p.segmento} · ${p.cidade}`]));
-  const detalhes = criarDetalhesProspeccao(p);
-  card.appendChild(criarToggleDetalhes(detalhes));
-  card.appendChild(detalhes);
-  return card;
 }
 function criarCardProspeccao(p) {
   const key = STATUS_PROSPECCAO_KEY[p.status] || 'nao-contatado';

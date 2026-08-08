@@ -166,16 +166,6 @@ a { color: var(--primary-strong); }
 .badge-prospeccao-fechado { background: rgba(63,185,80,.15); color: var(--green); }
 .badge-prospeccao-recusado { background: rgba(248,81,73,.15); color: var(--red); }
 
-.prospeccao-exemplo {
-  border-color: rgba(227,179,65,.4);
-  background: rgba(227,179,65,.08);
-}
-.prospeccao-exemplo::before { background: var(--amber) !important; }
-.prospeccao-exemplo-tag {
-  font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--amber); margin-bottom: 4px; display: block;
-}
-
 .prospeccao-toggle { font-size: 0.72rem; color: var(--muted); cursor: pointer; margin: 2px 0 6px; }
 .prospeccao-toggle:hover { color: var(--primary-strong); }
 .prospeccao-detalhes { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
