@@ -712,6 +712,10 @@ function renderizarVagas() {
     const db = new Date(b['Candidatura']).getTime();
     return (isNaN(db) ? -Infinity : db) - (isNaN(da) ? -Infinity : da);
   });
+  const contador = document.getElementById('contadorVagas');
+  contador.textContent = (termo || status !== 'todos')
+    ? `${filtrados.length} de ${vagas.length}`
+    : `${vagas.length}`;
   const lista = document.getElementById('listaVagas');
   lista.innerHTML = '';
   if (ordenados.length === 0) {

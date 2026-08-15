@@ -92,6 +92,11 @@ a { color: var(--primary-strong); }
   align-items: center;
   gap: 10px;
 }
+.contador-badge {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  font-size: 0.68rem; font-weight: 600; text-transform: none; letter-spacing: normal;
+  padding: 2px 9px; border-radius: 20px;
+}
 .section-title::after {
   content: '';
   flex: 1;
