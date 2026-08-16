@@ -18,6 +18,10 @@ if [ -n "$DH" ]; then
   fi
 fi
 
+# Tailscale é o app Android nativo (não roda via Termux), então não fica de pé
+# sozinho após o boot — precisa ser aberto para reconectar à tailnet.
+su -c "am start -n com.tailscale.ipn/.MainActivity" >/dev/null 2>&1
+
 su -c "cd /data/data/com.termux/files/home/adguardhome && SSL_CERT_FILE=/data/data/com.termux/files/home/adguardhome/cert.pem nohup ./AdGuardHome -w /data/data/com.termux/files/home/adguardhome > adguard.log 2>&1 &"
 cd /data/data/com.termux/files/home/intranet && nohup python3 server.py > server.log 2>&1 &
 sshd -D
