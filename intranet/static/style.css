@@ -15,13 +15,13 @@
   --amber: #9c6519;
   --red: #c22e39;
   --blue: #2f5fc4;
-  --card-bg: #575799;
-  --card-bg-hover: #63639c;
-  --card-foreground: #ffffff;
-  --card-muted: #D3D3FF;
-  --card-border: rgba(255, 255, 255, 0.22);
-  --card-border-strong: rgba(255, 255, 255, 0.4);
-  --card-tint: rgba(255, 255, 255, 0.18);
+  --card-bg: #92AB9B;
+  --card-bg-hover: #85a08d;
+  --card-foreground: #1c2b20;
+  --card-muted: #2e3f34;
+  --card-border: rgba(0, 0, 0, 0.16);
+  --card-border-strong: rgba(0, 0, 0, 0.3);
+  --card-tint: rgba(0, 0, 0, 0.08);
   --radius: 12px;
   --radius-sm: 8px;
   --font: 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
@@ -53,10 +53,10 @@ a { color: var(--primary-strong); }
 .header h1 span { color: var(--foreground); }
 .relogio {
   font-size: 0.9rem;
-  color: var(--muted);
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: #000000;
+  border: 1px solid #000000;
   padding: 8px 16px;
   border-radius: 30px;
 }
