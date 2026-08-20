@@ -297,10 +297,10 @@ a { color: var(--primary-strong); }
 .agenda-item {
   background: var(--card-tint); border-radius: var(--radius-sm);
   padding: 6px 8px; font-size: 0.75rem; color: var(--card-foreground);
-  display: flex; flex-direction: column; gap: 2px;
+  display: flex; flex-direction: column; gap: 2px; cursor: pointer;
 }
+.agenda-item:hover { background: var(--card-border); }
 .agenda-item-hora { font-size: 0.65rem; color: var(--card-muted); font-weight: 600; }
-.agenda-item-acoes { display: flex; gap: 4px; margin-top: 4px; }
 .agenda-add {
   background: none; border: 1px dashed var(--card-border); color: var(--card-muted);
   border-radius: var(--radius-sm); padding: 6px; font-size: 0.72rem; cursor: pointer; text-align: center;
@@ -451,6 +451,8 @@ a { color: var(--primary-strong); }
 }
 .campo input:focus, .campo select:focus, .campo textarea:focus { border-color: var(--primary); }
 .modal-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+#btnExcluirAgenda { margin-right: auto; }
+#btnExcluirAgenda.hidden { display: none; }
 
 /* TOAST */
 #toast {

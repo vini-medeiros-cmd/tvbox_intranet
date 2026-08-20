@@ -133,34 +133,30 @@ function criarColunaAgenda(dia) {
   ]);
 }
 function criarItemAgenda(a) {
-  const btnEditar = el('button', {
-    class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
-    onclick: () => abrirModalAgenda(a)
-  });
-  const btnExcluir = el('button', {
-    class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
-    onclick: () => {
-      if (confirm(`Excluir "${a.texto}"?`)) {
-        agenda = agenda.filter(x => x.id !== a.id);
-        salvarAgenda();
-        renderizarAgenda();
-      }
-    }
-  });
   const filhos = [];
   if (a.hora) filhos.push(el('span', { class: 'agenda-item-hora' }, [a.hora]));
   filhos.push(el('span', {}, [a.texto]));
-  filhos.push(el('div', { class: 'agenda-item-acoes' }, [btnEditar, btnExcluir]));
-  return el('div', { class: 'agenda-item' }, filhos);
+  return el('div', { class: 'agenda-item', onclick: () => abrirModalAgenda(a) }, filhos);
 }
 const modalAgenda = document.getElementById('modalAgenda');
+const btnExcluirAgenda = document.getElementById('btnExcluirAgenda');
 document.getElementById('btnCancelarAgenda').addEventListener('click', () => modalAgenda.classList.add('hidden'));
+btnExcluirAgenda.addEventListener('click', () => {
+  const a = agenda.find(x => x.id === agendaEditandoId);
+  if (a && confirm(`Excluir "${a.texto}"?`)) {
+    agenda = agenda.filter(x => x.id !== a.id);
+    salvarAgenda();
+    renderizarAgenda();
+    modalAgenda.classList.add('hidden');
+  }
+});
 function abrirModalAgenda(a, diaPreset) {
   agendaEditandoId = a ? a.id : null;
   document.getElementById('modalAgendaTitulo').textContent = a ? 'Editar compromisso' : 'Novo compromisso';
   document.getElementById('campoAgendaDia').value = a ? a.dia : (diaPreset || 'Segunda');
   document.getElementById('campoAgendaHora').value = a ? (a.hora || '') : '';
   document.getElementById('campoAgendaTexto').value = a ? a.texto : '';
+  btnExcluirAgenda.classList.toggle('hidden', !a);
   modalAgenda.classList.remove('hidden');
   setTimeout(() => document.getElementById('campoAgendaTexto').focus(), 50);
 }
