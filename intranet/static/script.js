@@ -551,7 +551,9 @@ function renderizarAtalhos() {
       el('button', {
         class: 'atalho-seta', type: 'button', title: 'Mover para frente',
         onclick: () => moverAtalho(idx, 1)
-      }, ['▶']),
+      }, ['▶'])
+    ]);
+    const acoes = el('div', { class: 'atalho-acoes' }, [
       el('button', {
         class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
         onclick: () => abrirModalAtalho(a)
@@ -567,7 +569,7 @@ function renderizarAtalhos() {
         }
       })
     ]);
-    const card = el('div', { class: 'card atalho-card' }, [link, setas]);
+    const card = el('div', { class: 'card atalho-card' }, [link, setas, acoes]);
     grid.appendChild(card);
   });
   grid.appendChild(el('div', { class: 'card atalho-card-novo', onclick: () => abrirModalAtalho(null) }, [

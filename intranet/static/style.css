@@ -345,7 +345,7 @@ a { color: var(--primary-strong); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.atalho-setas { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+.atalho-setas, .atalho-acoes { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
 .atalho-seta {
   background: none; border: 1px solid var(--card-border); color: var(--card-muted);
   width: 18px; height: 16px; border-radius: 4px; cursor: pointer;
