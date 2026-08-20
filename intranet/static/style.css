@@ -299,7 +299,7 @@ a { color: var(--primary-strong); }
   padding: 6px 8px; font-size: 0.75rem; color: var(--card-foreground);
   display: flex; flex-direction: column; gap: 2px; cursor: pointer;
 }
-.agenda-item:hover { background: var(--card-border); }
+.agenda-item:hover { background: var(--card-bg-hover); }
 .agenda-item-hora { font-size: 0.65rem; color: var(--card-muted); font-weight: 600; }
 .agenda-add {
   background: none; border: 1px dashed var(--card-border); color: var(--card-muted);
