@@ -2,10 +2,10 @@
 
 :root {
   --background: #ffffff;
-  --surface: #f6f6f6;
-  --surface-hover: #ececec;
+  --surface: #e6e6e6;
+  --surface-hover: #d9d9d9;
   --foreground: #1a1a1a;
-  --muted: #6e6e6e;
+  --muted: #5f5f5f;
   --primary: #262626;
   --primary-strong: #000000;
   --primary-tint: rgba(0,0,0,.06);
