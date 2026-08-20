@@ -1,16 +1,16 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --background: #D3D3FF;
-  --surface: #f4f4ff;
-  --surface-hover: #e7e7fb;
-  --foreground: #2b2b45;
-  --muted: #6a6a94;
-  --primary: #575799;
-  --primary-strong: #45456e;
-  --primary-tint: rgba(87,87,153,.15);
-  --border: rgba(43, 43, 69, 0.14);
-  --border-strong: rgba(43, 43, 69, 0.24);
+  --background: #ffffff;
+  --surface: #f6f6f6;
+  --surface-hover: #ececec;
+  --foreground: #1a1a1a;
+  --muted: #6e6e6e;
+  --primary: #262626;
+  --primary-strong: #000000;
+  --primary-tint: rgba(0,0,0,.06);
+  --border: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.22);
   --green: #237a37;
   --amber: #9c6519;
   --red: #c22e39;
@@ -164,7 +164,7 @@ a { color: var(--primary-strong); }
 .prospeccao-card[data-status="proposta"]::before { background: var(--primary); }
 .prospeccao-card[data-status="fechado"]::before { background: var(--green); }
 .prospeccao-card[data-status="recusado"]::before { background: var(--red); }
-.badge-prospeccao-nao-contatado { background: rgba(43,43,69,.08); color: var(--muted); }
+.badge-prospeccao-nao-contatado { background: rgba(0,0,0,.06); color: var(--muted); }
 .badge-prospeccao-contatado { background: rgba(47,95,196,.15); color: var(--blue); }
 .badge-prospeccao-negociacao { background: rgba(156,101,25,.15); color: var(--amber); }
 .badge-prospeccao-proposta { background: var(--primary-tint); color: var(--primary-strong); }
