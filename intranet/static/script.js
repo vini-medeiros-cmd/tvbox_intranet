@@ -930,6 +930,27 @@ document.getElementById('formProspeccao').addEventListener('submit', (e) => {
   e.target.reset();
 });
 
+// === SEÇÕES RECOLHÍVEIS (Início) ===
+function configurarSecaoRecolhivel(idTitulo, idCorpo) {
+  const titulo = document.getElementById(idTitulo);
+  const corpo = document.getElementById(idCorpo);
+  const seta = titulo.querySelector('.secao-seta');
+  const chave = `secaoRecolhida:${idCorpo}`;
+  const aplicar = (recolhida) => {
+    corpo.classList.toggle('hidden', recolhida);
+    seta.classList.toggle('recolhida', recolhida);
+  };
+  aplicar(localStorage.getItem(chave) === '1');
+  titulo.addEventListener('click', () => {
+    const recolhida = !corpo.classList.contains('hidden');
+    aplicar(recolhida);
+    localStorage.setItem(chave, recolhida ? '1' : '0');
+  });
+}
+configurarSecaoRecolhivel('tituloAtalhos', 'corpoAtalhos');
+configurarSecaoRecolhivel('tituloSenhas', 'corpoSenhas');
+configurarSecaoRecolhivel('tituloInfra', 'corpoInfra');
+
 // === INIT ===
 carregarAtalhos();
 carregarSenhas();

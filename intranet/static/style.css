@@ -2,8 +2,8 @@
 
 :root {
   --background: #ffffff;
-  --surface: #e6e6e6;
-  --surface-hover: #d9d9d9;
+  --surface: #d4d4d4;
+  --surface-hover: #c7c7c7;
   --foreground: #1a1a1a;
   --muted: #5f5f5f;
   --primary: #262626;
@@ -97,6 +97,11 @@ a { color: var(--primary-strong); }
   font-size: 0.68rem; font-weight: 600; text-transform: none; letter-spacing: normal;
   padding: 2px 9px; border-radius: 20px;
 }
+.secao-recolhivel { cursor: pointer; user-select: none; }
+.secao-recolhivel:hover { color: var(--primary-strong); }
+.secao-seta { display: inline-block; transition: transform .15s; font-size: 0.85em; }
+.secao-seta.recolhida { transform: rotate(-90deg); }
+#corpoAtalhos.hidden, #corpoSenhas.hidden, #corpoInfra.hidden { display: none; }
 .section-title::after {
   content: '';
   flex: 1;
