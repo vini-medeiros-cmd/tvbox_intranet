@@ -541,14 +541,9 @@ function renderizarAtalhos() {
   grid.innerHTML = '';
   atalhos.forEach((a, idx) => {
     const link = el('a', { class: 'atalho-link', href: a.url, target: '_blank', rel: 'noopener' }, [
-      el('div', { class: 'atalho-icone' }, [a.nome.slice(0, 1).toUpperCase()]),
       el('div', { class: 'atalho-nome', title: a.nome }, [a.nome])
     ]);
     const setas = el('div', { class: 'atalho-setas' }, [
-      el('button', {
-        class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
-        onclick: () => abrirModalAtalho(a)
-      }),
       el('button', {
         class: 'atalho-seta', type: 'button', title: 'Mover para trás',
         onclick: () => moverAtalho(idx, -1)
@@ -556,22 +551,27 @@ function renderizarAtalhos() {
       el('button', {
         class: 'atalho-seta', type: 'button', title: 'Mover para frente',
         onclick: () => moverAtalho(idx, 1)
-      }, ['▶'])
+      }, ['▶']),
+      el('button', {
+        class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+        onclick: () => abrirModalAtalho(a)
+      }),
+      el('button', {
+        class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+        onclick: () => {
+          if (confirm(`Remover atalho "${a.nome}"?`)) {
+            atalhos = atalhos.filter(x => x.id !== a.id);
+            salvarAtalhos();
+            renderizarAtalhos();
+          }
+        }
+      })
     ]);
     const card = el('div', { class: 'card atalho-card' }, [link, setas]);
-    card.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      if (confirm(`Remover atalho "${a.nome}"?`)) {
-        atalhos = atalhos.filter(x => x.id !== a.id);
-        salvarAtalhos();
-        renderizarAtalhos();
-      }
-    });
     grid.appendChild(card);
   });
   grid.appendChild(el('div', { class: 'card atalho-card-novo', onclick: () => abrirModalAtalho(null) }, [
-    el('div', { class: 'atalho-icone' }, ['+']),
-    el('div', {}, ['Novo'])
+    el('div', {}, ['+ Novo'])
   ]));
 }
 function moverAtalho(idx, direcao) {
