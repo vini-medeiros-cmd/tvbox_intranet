@@ -212,6 +212,8 @@ class Handler(BaseHTTPRequestHandler):
             self._enviar_json(ler_json("senhas.json"))
         elif self.path == "/api/prospeccao":
             self._enviar_json(ler_json("prospeccao.json"))
+        elif self.path == "/api/agenda":
+            self._enviar_json(ler_json("agenda.json"))
         elif self.path == "/api/financas":
             self._enviar_json(sheets_ler(
                 CONFIG.get("financas_script_url", ""), CONFIG.get("sheets_token", ""),
@@ -264,6 +266,9 @@ class Handler(BaseHTTPRequestHandler):
             self._enviar_json({"ok": True})
         elif self.path == "/api/prospeccao" and isinstance(dados, list):
             gravar_json("prospeccao.json", dados)
+            self._enviar_json({"ok": True})
+        elif self.path == "/api/agenda" and isinstance(dados, list):
+            gravar_json("agenda.json", dados)
             self._enviar_json({"ok": True})
         elif self.path == "/api/financas" and isinstance(dados, dict):
             self._enviar_json(sheets_escrever(

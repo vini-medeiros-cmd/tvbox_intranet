@@ -94,6 +94,96 @@ function mostrarToast(msg, erro = false) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
+// === AGENDA DA SEMANA ===
+let agenda = [];
+let agendaEditandoId = null;
+const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+async function carregarAgenda() {
+  const res = await fetch('/api/agenda');
+  agenda = await res.json();
+  renderizarAgenda();
+}
+async function salvarAgenda() {
+  try {
+    const res = await fetch('/api/agenda', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(agenda) });
+    if (!res.ok) throw new Error();
+    mostrarToast('Salvo ✓');
+  } catch {
+    mostrarToast('Erro ao salvar', true);
+  }
+}
+function renderizarAgenda() {
+  const grid = document.getElementById('gridAgenda');
+  grid.innerHTML = '';
+  DIAS_SEMANA.forEach(dia => grid.appendChild(criarColunaAgenda(dia)));
+}
+function criarColunaAgenda(dia) {
+  const itens = agenda.filter(a => a.dia === dia).sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+  const lista = el('div', { class: 'agenda-lista' });
+  if (itens.length === 0) {
+    lista.appendChild(el('div', { class: 'agenda-vazio' }, ['—']));
+  } else {
+    itens.forEach(a => lista.appendChild(criarItemAgenda(a)));
+  }
+  const btnAdd = el('button', { class: 'agenda-add', type: 'button', onclick: () => abrirModalAgenda(null, dia) }, ['+ adicionar']);
+  return el('div', { class: 'agenda-dia' }, [
+    el('div', { class: 'agenda-dia-titulo' }, [dia]),
+    lista,
+    btnAdd
+  ]);
+}
+function criarItemAgenda(a) {
+  const btnEditar = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+    onclick: () => abrirModalAgenda(a)
+  });
+  const btnExcluir = el('button', {
+    class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+    onclick: () => {
+      if (confirm(`Excluir "${a.texto}"?`)) {
+        agenda = agenda.filter(x => x.id !== a.id);
+        salvarAgenda();
+        renderizarAgenda();
+      }
+    }
+  });
+  const filhos = [];
+  if (a.hora) filhos.push(el('span', { class: 'agenda-item-hora' }, [a.hora]));
+  filhos.push(el('span', {}, [a.texto]));
+  filhos.push(el('div', { class: 'agenda-item-acoes' }, [btnEditar, btnExcluir]));
+  return el('div', { class: 'agenda-item' }, filhos);
+}
+const modalAgenda = document.getElementById('modalAgenda');
+document.getElementById('btnCancelarAgenda').addEventListener('click', () => modalAgenda.classList.add('hidden'));
+function abrirModalAgenda(a, diaPreset) {
+  agendaEditandoId = a ? a.id : null;
+  document.getElementById('modalAgendaTitulo').textContent = a ? 'Editar compromisso' : 'Novo compromisso';
+  document.getElementById('campoAgendaDia').value = a ? a.dia : (diaPreset || 'Segunda');
+  document.getElementById('campoAgendaHora').value = a ? (a.hora || '') : '';
+  document.getElementById('campoAgendaTexto').value = a ? a.texto : '';
+  modalAgenda.classList.remove('hidden');
+  setTimeout(() => document.getElementById('campoAgendaTexto').focus(), 50);
+}
+document.getElementById('formAgenda').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const dados = {
+    dia: document.getElementById('campoAgendaDia').value,
+    hora: document.getElementById('campoAgendaHora').value.trim(),
+    texto: document.getElementById('campoAgendaTexto').value.trim()
+  };
+  if (agendaEditandoId) {
+    const a = agenda.find(x => x.id === agendaEditandoId);
+    Object.assign(a, dados);
+  } else {
+    const novoId = agenda.length ? Math.max(...agenda.map(x => x.id)) + 1 : 1;
+    agenda.push({ id: novoId, ...dados });
+  }
+  salvarAgenda();
+  renderizarAgenda();
+  modalAgenda.classList.add('hidden');
+  e.target.reset();
+});
+
 // === PROJETOS ===
 async function carregarProjetos() {
   const res = await fetch('/api/projetos');
@@ -947,11 +1037,13 @@ function configurarSecaoRecolhivel(idTitulo, idCorpo) {
     localStorage.setItem(chave, recolhida ? '1' : '0');
   });
 }
+configurarSecaoRecolhivel('tituloAgenda', 'corpoAgenda');
 configurarSecaoRecolhivel('tituloAtalhos', 'corpoAtalhos');
 configurarSecaoRecolhivel('tituloSenhas', 'corpoSenhas');
 configurarSecaoRecolhivel('tituloInfra', 'corpoInfra');
 
 // === INIT ===
+carregarAgenda();
 carregarAtalhos();
 carregarSenhas();
 carregarInfra();
