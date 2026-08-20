@@ -291,21 +291,31 @@ a { color: var(--primary-strong); }
 .agenda-dia-titulo {
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
   color: var(--card-foreground); padding-bottom: 6px; border-bottom: 1px solid var(--card-border);
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
+.agenda-dia-editar {
+  background: none; border: 1px solid var(--card-border); color: var(--card-muted);
+  width: 18px; height: 16px; border-radius: 4px; cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.agenda-dia-editar:hover { border-color: var(--card-foreground); color: var(--card-foreground); }
 .agenda-lista { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
 .agenda-vazio { font-size: 0.68rem; color: var(--card-muted); opacity: .75; text-align: center; padding: 8px 0; }
 .agenda-item {
   background: var(--card-tint); border-radius: var(--radius-sm);
   padding: 6px 8px; font-size: 0.75rem; color: var(--card-foreground);
-  display: flex; flex-direction: column; gap: 2px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
 }
-.agenda-item:hover { background: var(--card-bg-hover); }
 .agenda-item-hora { font-size: 0.65rem; color: var(--card-muted); font-weight: 600; }
-.agenda-add {
-  background: none; border: 1px dashed var(--card-border); color: var(--card-muted);
-  border-radius: var(--radius-sm); padding: 6px; font-size: 0.72rem; cursor: pointer; text-align: center;
+
+/* Painel de edição do dia (dentro do modal) */
+#listaAgendaDiaEdicao { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.agenda-dia-linha {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 8px 10px; font-size: 0.82rem;
 }
-.agenda-add:hover { border-color: var(--card-foreground); color: var(--card-foreground); }
+.agenda-dia-linha-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* INFRA */
 .infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }

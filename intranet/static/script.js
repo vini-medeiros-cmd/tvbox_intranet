@@ -125,29 +125,86 @@ function criarColunaAgenda(dia) {
   } else {
     itens.forEach(a => lista.appendChild(criarItemAgenda(a)));
   }
-  const btnAdd = el('button', { class: 'agenda-add', type: 'button', onclick: () => abrirModalAgenda(null, dia) }, ['+ adicionar']);
-  return el('div', { class: 'agenda-dia' }, [
-    el('div', { class: 'agenda-dia-titulo' }, [dia]),
-    lista,
-    btnAdd
+  const btnEditarDia = el('button', {
+    class: 'agenda-dia-editar', type: 'button', title: 'Editar compromissos do dia', html: ICONS.pencil,
+    onclick: () => abrirModalAgendaDia(dia)
+  });
+  const titulo = el('div', { class: 'agenda-dia-titulo' }, [
+    el('span', {}, [dia]),
+    btnEditarDia
   ]);
+  return el('div', { class: 'agenda-dia' }, [titulo, lista]);
 }
 function criarItemAgenda(a) {
   const filhos = [];
   if (a.hora) filhos.push(el('span', { class: 'agenda-item-hora' }, [a.hora]));
   filhos.push(el('span', {}, [a.texto]));
-  return el('div', { class: 'agenda-item', onclick: () => abrirModalAgenda(a) }, filhos);
+  return el('div', { class: 'agenda-item' }, filhos);
 }
+
+// Painel "editar dia": lista todos os compromissos de um dia com editar/excluir
+let diaAtualEditando = null;
+const modalAgendaDia = document.getElementById('modalAgendaDia');
+function abrirModalAgendaDia(dia) {
+  diaAtualEditando = dia;
+  document.getElementById('modalAgendaDiaTitulo').textContent = dia;
+  renderizarListaAgendaDia();
+  modalAgendaDia.classList.remove('hidden');
+}
+function renderizarListaAgendaDia() {
+  const lista = document.getElementById('listaAgendaDiaEdicao');
+  lista.innerHTML = '';
+  const itens = agenda.filter(a => a.dia === diaAtualEditando).sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+  if (itens.length === 0) {
+    lista.appendChild(criarEmptyState('Nenhum compromisso nesse dia.'));
+    return;
+  }
+  itens.forEach(a => {
+    const btnEditar = el('button', {
+      class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+      onclick: () => { modalAgendaDia.classList.add('hidden'); abrirModalAgenda(a); }
+    });
+    const btnExcluir = el('button', {
+      class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+      onclick: () => {
+        if (confirm(`Excluir "${a.texto}"?`)) {
+          agenda = agenda.filter(x => x.id !== a.id);
+          salvarAgenda();
+          renderizarAgenda();
+          renderizarListaAgendaDia();
+        }
+      }
+    });
+    const textoFilhos = [];
+    if (a.hora) textoFilhos.push(el('span', { class: 'agenda-item-hora' }, [a.hora + ' ']));
+    textoFilhos.push(el('span', {}, [a.texto]));
+    lista.appendChild(el('div', { class: 'agenda-dia-linha' }, [
+      el('div', { class: 'agenda-dia-linha-texto' }, textoFilhos),
+      el('div', { class: 'projeto-acoes' }, [btnEditar, btnExcluir])
+    ]));
+  });
+}
+document.getElementById('btnFecharAgendaDia').addEventListener('click', () => modalAgendaDia.classList.add('hidden'));
+document.getElementById('btnNovoAgendaDia').addEventListener('click', () => {
+  modalAgendaDia.classList.add('hidden');
+  abrirModalAgenda(null, diaAtualEditando);
+});
+
+// Modal de compromisso individual (criar/editar)
 const modalAgenda = document.getElementById('modalAgenda');
 const btnExcluirAgenda = document.getElementById('btnExcluirAgenda');
-document.getElementById('btnCancelarAgenda').addEventListener('click', () => modalAgenda.classList.add('hidden'));
+function fecharModalAgenda() {
+  modalAgenda.classList.add('hidden');
+  if (diaAtualEditando) abrirModalAgendaDia(diaAtualEditando);
+}
+document.getElementById('btnCancelarAgenda').addEventListener('click', fecharModalAgenda);
 btnExcluirAgenda.addEventListener('click', () => {
   const a = agenda.find(x => x.id === agendaEditandoId);
   if (a && confirm(`Excluir "${a.texto}"?`)) {
     agenda = agenda.filter(x => x.id !== a.id);
     salvarAgenda();
     renderizarAgenda();
-    modalAgenda.classList.add('hidden');
+    fecharModalAgenda();
   }
 });
 function abrirModalAgenda(a, diaPreset) {
@@ -176,8 +233,8 @@ document.getElementById('formAgenda').addEventListener('submit', (e) => {
   }
   salvarAgenda();
   renderizarAgenda();
-  modalAgenda.classList.add('hidden');
   e.target.reset();
+  fecharModalAgenda();
 });
 
 // === PROJETOS ===
