@@ -1,27 +1,27 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --background: #3B2A1E;
-  --surface: #4a3624;
-  --surface-hover: #55402b;
+  --background: #0b0b0b;
+  --surface: #1a1a1a;
+  --surface-hover: #242424;
   --foreground: #ffffff;
-  --muted: #c9b8a4;
-  --primary: #C9A877;
-  --primary-strong: #D9BD91;
-  --primary-tint: rgba(201,168,119,.18);
-  --border: rgba(255, 255, 255, 0.16);
-  --border-strong: rgba(255, 255, 255, 0.28);
-  --green: #3f7a4a;
-  --amber: #8f6a34;
-  --red: #a8433f;
-  --blue: #3f5f8f;
-  --card-bg: #C9A877;
-  --card-bg-hover: #bd9a68;
-  --card-foreground: #2b1d12;
-  --card-muted: #4a3925;
-  --card-border: rgba(43, 29, 18, 0.32);
-  --card-border-strong: rgba(43, 29, 18, 0.5);
-  --card-tint: rgba(43, 29, 18, 0.1);
+  --muted: #b0b0b0;
+  --primary: #9b59b6;
+  --primary-strong: #d7bde2;
+  --primary-tint: rgba(155,89,182,.15);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --green: #3fb950;
+  --amber: #e3b341;
+  --red: #f85149;
+  --blue: #58a6ff;
+  --card-bg: #1a1a1a;
+  --card-bg-hover: #242424;
+  --card-foreground: #ffffff;
+  --card-muted: #b0b0b0;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --card-border-strong: rgba(255, 255, 255, 0.18);
+  --card-tint: rgba(155, 89, 182, 0.15);
   --radius: 12px;
   --radius-sm: 8px;
   --font: 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
