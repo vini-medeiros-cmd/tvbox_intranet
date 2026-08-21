@@ -1,27 +1,27 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --background: #EDE3CD;
-  --surface: #ffffff;
-  --surface-hover: #f2ece0;
-  --foreground: #1a1a1a;
-  --muted: #5f5f5f;
-  --primary: #262626;
-  --primary-strong: #000000;
-  --primary-tint: rgba(0,0,0,.06);
-  --border: rgba(0, 0, 0, 0.12);
-  --border-strong: rgba(0, 0, 0, 0.22);
+  --background: #3B2A1E;
+  --surface: #4a3624;
+  --surface-hover: #55402b;
+  --foreground: #ffffff;
+  --muted: #c9b8a4;
+  --primary: #C9A877;
+  --primary-strong: #D9BD91;
+  --primary-tint: rgba(201,168,119,.18);
+  --border: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.28);
   --green: #3f7a4a;
   --amber: #8f6a34;
   --red: #a8433f;
   --blue: #3f5f8f;
-  --card-bg: #ffffff;
-  --card-bg-hover: #f0f0f0;
-  --card-foreground: #1a1a1a;
-  --card-muted: #4a4a4a;
-  --card-border: rgba(0, 0, 0, 0.3);
-  --card-border-strong: rgba(0, 0, 0, 0.5);
-  --card-tint: rgba(0, 0, 0, 0.06);
+  --card-bg: #C9A877;
+  --card-bg-hover: #bd9a68;
+  --card-foreground: #2b1d12;
+  --card-muted: #4a3925;
+  --card-border: rgba(43, 29, 18, 0.32);
+  --card-border-strong: rgba(43, 29, 18, 0.5);
+  --card-tint: rgba(43, 29, 18, 0.1);
   --radius: 12px;
   --radius-sm: 8px;
   --font: 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
@@ -179,7 +179,7 @@ a { color: var(--primary-strong); }
 .badge-prospeccao-nao-contatado { background: #6e6e6e; color: #fff; }
 .badge-prospeccao-contatado { background: var(--blue); color: #fff; }
 .badge-prospeccao-negociacao { background: var(--amber); color: #fff; }
-.badge-prospeccao-proposta { background: var(--primary); color: #fff; }
+.badge-prospeccao-proposta { background: var(--primary); color: var(--card-foreground); }
 .badge-prospeccao-fechado { background: var(--green); color: #fff; }
 .badge-prospeccao-recusado { background: var(--red); color: #fff; }
 
@@ -274,8 +274,8 @@ a { color: var(--primary-strong); }
   transition: .15s;
 }
 .btn:hover { border-color: var(--primary); color: var(--foreground); }
-.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-.btn-primary:hover { opacity: .88; color: #fff; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--card-foreground); }
+.btn-primary:hover { opacity: .88; color: var(--card-foreground); }
 .btn-danger:hover { border-color: var(--red); color: var(--red); }
 
 .arquivados-toggle { font-size: 0.8rem; color: var(--muted); cursor: pointer; margin-top: 14px; }
