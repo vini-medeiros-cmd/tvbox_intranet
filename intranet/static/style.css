@@ -302,7 +302,7 @@ a { color: var(--primary-strong); }
 .agenda-lista { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
 .agenda-vazio { font-size: 0.68rem; color: var(--card-muted); opacity: .75; text-align: center; padding: 8px 0; }
 .agenda-item {
-  background: var(--card-tint); border-radius: var(--radius-sm);
+  background: #000000; border: 1px solid var(--primary); border-radius: var(--radius-sm);
   padding: 6px 8px; font-size: 0.75rem; color: var(--card-foreground);
   display: flex; flex-direction: column; gap: 2px;
 }
