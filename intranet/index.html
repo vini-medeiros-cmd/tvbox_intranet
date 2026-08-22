@@ -35,7 +35,10 @@
 
   <!-- ATALHOS -->
   <div class="section">
-    <div class="section-title secao-recolhivel" id="tituloAtalhos"><span class="secao-seta">▾</span> Atalhos</div>
+    <div class="section-title secao-recolhivel" id="tituloAtalhos">
+      <span class="secao-seta">▾</span> Atalhos
+      <button type="button" class="agenda-dia-editar" id="btnEditarAtalhos" title="Editar atalhos">✎</button>
+    </div>
     <div id="corpoAtalhos">
       <div class="atalhos-grid" id="gridAtalhos"></div>
     </div>
@@ -316,6 +319,18 @@
   </div>
 </div>
 
+<!-- MODAL LISTA DE ATALHOS (edição/exclusão/ordem, todos de uma vez) -->
+<div class="modal-overlay hidden" id="modalAtalhosLista">
+  <div class="modal">
+    <h2>Atalhos</h2>
+    <div id="listaAtalhosEdicao"></div>
+    <div class="modal-acoes">
+      <button type="button" class="btn" id="btnFecharAtalhosLista">Fechar</button>
+      <button type="button" class="btn btn-primary" id="btnNovoAtalhoLista">+ Novo</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ATALHO -->
 <div class="modal-overlay hidden" id="modalAtalho">
   <div class="modal">
@@ -324,6 +339,7 @@
       <div class="campo"><label>Nome</label><input type="text" id="campoAtalhoNome" required></div>
       <div class="campo"><label>URL</label><input type="text" id="campoAtalhoUrl" required placeholder="https://..."></div>
       <div class="modal-acoes">
+        <button type="button" class="btn btn-danger hidden" id="btnExcluirAtalho">Excluir</button>
         <button type="button" class="btn" id="btnCancelarAtalho">Cancelar</button>
         <button type="submit" class="btn btn-primary">Salvar</button>
       </div>

@@ -329,20 +329,19 @@ a { color: var(--primary-strong); }
 .infra-detalhe { font-size: 0.75rem; color: var(--card-muted); margin-top: 2px; }
 
 /* ATALHOS */
-.atalhos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
+.atalhos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 5px; }
 .atalho-card {
-  padding: 6px;
+  padding: 5px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
 }
 .atalho-card:hover { border-color: var(--card-border-strong); background: var(--card-bg-hover); }
 .atalho-link {
   text-align: center;
   text-decoration: none;
   color: var(--card-foreground);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 500;
   display: flex;
   flex-direction: column;
@@ -355,7 +354,6 @@ a { color: var(--primary-strong); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.atalho-setas, .atalho-acoes { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
 .atalho-seta {
   background: none; border: 1px solid var(--card-border); color: var(--card-muted);
   width: 18px; height: 16px; border-radius: 4px; cursor: pointer;
@@ -363,12 +361,6 @@ a { color: var(--primary-strong); }
   display: inline-flex; align-items: center; justify-content: center;
 }
 .atalho-seta:hover { border-color: var(--card-foreground); color: var(--card-foreground); }
-.atalho-card-novo {
-  padding: 6px; cursor: pointer; color: var(--card-muted);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  font-size: 0.68rem; font-weight: 500; min-height: 44px;
-}
-.atalho-card-novo:hover { border-color: var(--card-foreground); background: var(--card-bg-hover); color: var(--card-foreground); }
 
 /* TABELAS (financas/vagas) */
 .tabela { display: flex; flex-direction: column; gap: 4px; }
@@ -461,8 +453,8 @@ a { color: var(--primary-strong); }
 }
 .campo input:focus, .campo select:focus, .campo textarea:focus { border-color: var(--primary); }
 .modal-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-#btnExcluirAgenda { margin-right: auto; }
-#btnExcluirAgenda.hidden { display: none; }
+#btnExcluirAgenda, #btnExcluirAtalho { margin-right: auto; }
+#btnExcluirAgenda.hidden, #btnExcluirAtalho.hidden { display: none; }
 
 /* TOAST */
 #toast {

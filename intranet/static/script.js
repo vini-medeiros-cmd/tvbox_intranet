@@ -592,42 +592,16 @@ async function salvarAtalhos() {
 function renderizarAtalhos() {
   const grid = document.getElementById('gridAtalhos');
   grid.innerHTML = '';
-  atalhos.forEach((a, idx) => {
+  if (atalhos.length === 0) {
+    grid.appendChild(criarEmptyState('Nenhum atalho cadastrado.'));
+    return;
+  }
+  atalhos.forEach(a => {
     const link = el('a', { class: 'atalho-link', href: a.url, target: '_blank', rel: 'noopener' }, [
       el('div', { class: 'atalho-nome', title: a.nome }, [a.nome])
     ]);
-    const setas = el('div', { class: 'atalho-setas' }, [
-      el('button', {
-        class: 'atalho-seta', type: 'button', title: 'Mover para trás',
-        onclick: () => moverAtalho(idx, -1)
-      }, ['◀']),
-      el('button', {
-        class: 'atalho-seta', type: 'button', title: 'Mover para frente',
-        onclick: () => moverAtalho(idx, 1)
-      }, ['▶'])
-    ]);
-    const acoes = el('div', { class: 'atalho-acoes' }, [
-      el('button', {
-        class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
-        onclick: () => abrirModalAtalho(a)
-      }),
-      el('button', {
-        class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
-        onclick: () => {
-          if (confirm(`Remover atalho "${a.nome}"?`)) {
-            atalhos = atalhos.filter(x => x.id !== a.id);
-            salvarAtalhos();
-            renderizarAtalhos();
-          }
-        }
-      })
-    ]);
-    const card = el('div', { class: 'card atalho-card' }, [link, setas, acoes]);
-    grid.appendChild(card);
+    grid.appendChild(el('div', { class: 'card atalho-card' }, [link]));
   });
-  grid.appendChild(el('div', { class: 'card atalho-card-novo', onclick: () => abrirModalAtalho(null) }, [
-    el('div', {}, ['+ Novo'])
-  ]));
 }
 function moverAtalho(idx, direcao) {
   const novoIdx = idx + direcao;
@@ -635,18 +609,91 @@ function moverAtalho(idx, direcao) {
   [atalhos[idx], atalhos[novoIdx]] = [atalhos[novoIdx], atalhos[idx]];
   salvarAtalhos();
   renderizarAtalhos();
+  renderizarListaAtalhosEdicao();
 }
+
+// Painel "editar atalhos": lista todos com mover/editar/excluir, igual a Agenda
+const modalAtalhosLista = document.getElementById('modalAtalhosLista');
+const btnEditarAtalhos = document.getElementById('btnEditarAtalhos');
+btnEditarAtalhos.innerHTML = ICONS.pencil;
+btnEditarAtalhos.addEventListener('click', (e) => {
+  e.stopPropagation();
+  abrirModalAtalhosLista();
+});
+function abrirModalAtalhosLista() {
+  renderizarListaAtalhosEdicao();
+  modalAtalhosLista.classList.remove('hidden');
+}
+function renderizarListaAtalhosEdicao() {
+  const lista = document.getElementById('listaAtalhosEdicao');
+  lista.innerHTML = '';
+  if (atalhos.length === 0) {
+    lista.appendChild(criarEmptyState('Nenhum atalho cadastrado.'));
+    return;
+  }
+  atalhos.forEach((a, idx) => {
+    const btnTras = el('button', {
+      class: 'atalho-seta', type: 'button', title: 'Mover para trás',
+      onclick: () => moverAtalho(idx, -1)
+    }, ['◀']);
+    const btnFrente = el('button', {
+      class: 'atalho-seta', type: 'button', title: 'Mover para frente',
+      onclick: () => moverAtalho(idx, 1)
+    }, ['▶']);
+    const btnEditar = el('button', {
+      class: 'atalho-seta', type: 'button', title: 'Editar', html: ICONS.pencil,
+      onclick: () => { modalAtalhosLista.classList.add('hidden'); abrirModalAtalho(a); }
+    });
+    const btnExcluir = el('button', {
+      class: 'atalho-seta', type: 'button', title: 'Excluir', html: ICONS.trash,
+      onclick: () => {
+        if (confirm(`Remover atalho "${a.nome}"?`)) {
+          atalhos = atalhos.filter(x => x.id !== a.id);
+          salvarAtalhos();
+          renderizarAtalhos();
+          renderizarListaAtalhosEdicao();
+        }
+      }
+    });
+    lista.appendChild(el('div', { class: 'agenda-dia-linha' }, [
+      el('div', { class: 'agenda-dia-linha-texto' }, [a.nome]),
+      el('div', { class: 'projeto-acoes' }, [btnTras, btnFrente, btnEditar, btnExcluir])
+    ]));
+  });
+}
+document.getElementById('btnFecharAtalhosLista').addEventListener('click', () => modalAtalhosLista.classList.add('hidden'));
+document.getElementById('btnNovoAtalhoLista').addEventListener('click', () => {
+  modalAtalhosLista.classList.add('hidden');
+  abrirModalAtalho(null);
+});
+
+// Modal de atalho individual (criar/editar)
 const modalAtalho = document.getElementById('modalAtalho');
+const btnExcluirAtalho = document.getElementById('btnExcluirAtalho');
 let atalhoEditandoId = null;
+function fecharModalAtalho() {
+  modalAtalho.classList.add('hidden');
+  abrirModalAtalhosLista();
+}
 function abrirModalAtalho(a) {
   atalhoEditandoId = a ? a.id : null;
   document.getElementById('modalAtalhoTitulo').textContent = a ? 'Editar atalho' : 'Novo atalho';
   document.getElementById('campoAtalhoNome').value = a ? a.nome : '';
   document.getElementById('campoAtalhoUrl').value = a ? a.url : '';
+  btnExcluirAtalho.classList.toggle('hidden', !a);
   modalAtalho.classList.remove('hidden');
   setTimeout(() => document.getElementById('campoAtalhoNome').focus(), 50);
 }
-document.getElementById('btnCancelarAtalho').addEventListener('click', () => modalAtalho.classList.add('hidden'));
+document.getElementById('btnCancelarAtalho').addEventListener('click', fecharModalAtalho);
+btnExcluirAtalho.addEventListener('click', () => {
+  const a = atalhos.find(x => x.id === atalhoEditandoId);
+  if (a && confirm(`Remover atalho "${a.nome}"?`)) {
+    atalhos = atalhos.filter(x => x.id !== a.id);
+    salvarAtalhos();
+    renderizarAtalhos();
+    fecharModalAtalho();
+  }
+});
 document.getElementById('formAtalho').addEventListener('submit', (e) => {
   e.preventDefault();
   let url = document.getElementById('campoAtalhoUrl').value.trim();
@@ -662,8 +709,8 @@ document.getElementById('formAtalho').addEventListener('submit', (e) => {
   }
   salvarAtalhos();
   renderizarAtalhos();
-  modalAtalho.classList.add('hidden');
   e.target.reset();
+  fecharModalAtalho();
 });
 
 // ===================== CONTROLE FINANCEIRO =====================
