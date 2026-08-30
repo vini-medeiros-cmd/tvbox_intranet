@@ -44,8 +44,87 @@ Acesse em `http://localhost:8080`.
 - **Senhas** — lista simples de credenciais
 - **Infra** — status ao vivo de serviços, tempo ligado e espaço em disco do host
 - **Projetos** — quadro com status, prazo, notas e filtro, com arquivamento automático dos concluídos
+- **Radar de Vagas** — busca vagas na Gupy e na InHire e lista por data de publicação
 
 Todos os dados ficam em arquivos JSON simples no disco, com backup automático a cada gravação (mantém as últimas 5 versões).
+
+## Radar de Vagas
+
+Coleta vagas da **Gupy** e da **InHire** e guarda num SQLite, para você buscar e
+decidir. Roda na própria box, em [`intranet/radar.py`](./intranet/radar.py) — só
+biblioteca padrão, nada de pip, nada de `node_modules`.
+
+```bash
+cd intranet
+cp data/radar.config.example.json data/radar.config.json
+python3 radar.py
+```
+
+O `server.py` dispara sozinho a cada 6h (`radar_intervalo_horas` no `config.json`;
+`0` desliga) e a aba tem botão "Atualizar agora". Roda como **subprocesso**: se
+travar ou estourar memória, a intranet continua de pé.
+
+Não há cron aqui de propósito — o Termux não traz um, e o Android mata processos
+soltos em segundo plano (mesmo motivo pelo qual o `sshd` roda em foreground). O
+servidor já é um processo vivo e protegido, então é ele quem agenda.
+
+### Sem filtro por cargo
+
+A coleta puxa **tudo** o que as APIs deixam alcançar; quem filtra é você, pela busca
+da aba. Foram 18.687 vagas na primeira coleta, de atendente de restaurante a
+enfermeiro a desenvolvedor.
+
+O filtro roda em **SQL, não em JavaScript**. Mandar 18 mil linhas para o navegador
+de uma TV box peneirar em memória travaria a página; o SQLite responde em ~20ms e o
+browser nunca recebe mais que 50 linhas.
+
+### Dois limites que vêm das APIs, não do script
+
+**Gupy:** `offset + limit` precisa ser ≤ 10.000. Sem termo de busca dá para alcançar
+só as **10.000 mais recentes** das 84 mil publicadas. Como a API devolve em ordem de
+data, isso cobre os últimos dias — que é o que interessa em quem roda de 6 em 6h.
+Termos em `radar.config.json` abrem uma janela de 10.000 adicional cada, para ir mais
+fundo numa área específica.
+
+**InHire:** não tem busca global. Cada requisição é de uma empresa (header
+`X-Tenant`), então [`data/inhire-tenants.json`](./intranet/data/inhire-tenants.json)
+é o que torna a busca possível. As 448 empresas foram enumeradas de fontes públicas
+(Wayback CDX e urlscan.io sobre `*.inhire.app`) e validadas uma a uma. Essa vem
+inteira: todas as ~8.700 vagas publicadas.
+
+> A API da InHire responde **403** para User-Agent de cliente HTTP padrão. Sem um UA
+> de navegador, tudo volta vazio e sem erro aparente.
+
+### O banco vira o arquivo que a API não te dá
+
+Cada coleta acrescenta; nada é apagado enquanto não envelhece. Como a Gupy só deixa
+ver as 10 mil mais recentes, depois de algumas semanas o seu banco tem um histórico
+que a própria plataforma não devolve.
+
+Vaga que sai do ar continua listada por um tempo, marcada como **"saiu do ar"** — se
+sumisse na hora, ela poderia desaparecer antes de você ter olhado e você nem saberia
+que existiu. O filtro "Só as no ar" vem ligado.
+
+### A primeira carga de datas é a demorada
+
+A listagem da InHire não traz data de publicação; o endpoint de detalhe traz. É uma
+requisição por vaga — cerca de 8.700 —, então o script busca no máximo 600 por
+execução e o cache converge em algumas rodadas. Para pular a espera, copie o cache
+pronto de uma máquina mais rápida:
+
+```bash
+scp inhire-details.json tvbox:~/tvbox-intranet/intranet/data/radar/
+```
+
+Isso importa: a mediana de idade das vagas da InHire é de **58 dias**, e há anúncios
+de mais de três anos ainda marcados como publicados. Por isso a idade aparece
+colorida em cada card — e por isso não existe nota de adequação: ler título e data
+leva dois segundos e não erra como um score erraria.
+
+### Custo na box
+
+Medido: **55 MB de pico de RAM**, ~5s de CPU por rodada (o resto é espera de rede),
+**8,1 MB** de banco para 18.687 vagas. A coleta leva ~5 min numa máquina de mesa.
 
 ## Aviso de segurança
 

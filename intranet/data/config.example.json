@@ -7,5 +7,6 @@
   "financas_script_url": "https://script.google.com/macros/s/AKfycb.../exec",
   "financas_aba": "Lancamentos",
   "vagas_script_url": "https://script.google.com/macros/s/AKfycb.../exec",
-  "vagas_aba": "Vagas"
+  "vagas_aba": "Vagas",
+  "radar_intervalo_horas": 6
 }

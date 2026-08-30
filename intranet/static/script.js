@@ -23,7 +23,7 @@ function criarEmptyState(msg) {
 }
 
 // === ABAS ===
-const VIEWS = { inicio: 'viewInicio', projetos: 'viewProjetos', prospeccao: 'viewProspeccao', financas: 'viewFinancas', vagas: 'viewVagas' };
+const VIEWS = { inicio: 'viewInicio', projetos: 'viewProjetos', prospeccao: 'viewProspeccao', financas: 'viewFinancas', vagas: 'viewVagas', radar: 'viewRadar' };
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1144,6 +1144,150 @@ configurarSecaoRecolhivel('tituloAtalhos', 'corpoAtalhos');
 configurarSecaoRecolhivel('tituloSenhas', 'corpoSenhas');
 configurarSecaoRecolhivel('tituloInfra', 'corpoInfra');
 
+// === RADAR DE VAGAS (somente leitura) ===
+// Alimentado por radar.py, que roda na propria box e grava em data/radar.db.
+// A Gestao de Vagas segue independente: nada aqui escreve nela.
+//
+// Sem score e sem filtro por cargo: o banco tem tudo o que as plataformas deixam
+// alcancar, ordenado por data. Quem decide o que serve e voce.
+//
+// O filtro roda no SERVIDOR (SQL). Sao dezenas de milhares de linhas — mandar isso
+// para o navegador de uma TV box peneirar em memoria travaria a pagina.
+let radarPagina = 0;
+let radarAcumulado = [];
+let radarUltimo = { total: 0, geradoEm: null, novas: 0 };
+
+const RADAR_MODALIDADE = { remote: 'Remoto', hybrid: 'Híbrido', 'on-site': 'Presencial', '': '' };
+
+function radarParams(pagina) {
+  const p = new URLSearchParams();
+  const termo = document.getElementById('filtroRadar').value.trim();
+  if (termo) p.set('q', termo);
+  const dias = document.getElementById('filtroIdadeRadar').value;
+  if (dias !== '0') p.set('dias', dias);
+  const plat = document.getElementById('filtroPlataformaRadar').value;
+  if (plat) p.set('plataforma', plat);
+  const mod = document.getElementById('filtroModalidadeRadar').value;
+  if (mod) p.set('modalidade', mod);
+  if (document.getElementById('filtroNoArRadar').checked) p.set('apenasNoAr', '1');
+  p.set('pagina', pagina);
+  return p;
+}
+
+async function carregarRadar(anexar = false) {
+  if (!anexar) radarPagina = 0;
+  try {
+    const res = await fetch(`/api/radar?${radarParams(radarPagina)}`);
+    const dados = await res.json();
+    radarUltimo = dados;
+    radarAcumulado = anexar ? radarAcumulado.concat(dados.vagas) : dados.vagas;
+  } catch {
+    radarUltimo = { total: 0, vagas: [], geradoEm: null, novas: 0 };
+    radarAcumulado = [];
+  }
+  const badge = document.getElementById('badgeRadar');
+  badge.textContent = radarUltimo.novas > 0 ? radarUltimo.novas : '';
+  renderizarRadar();
+}
+
+function renderizarRadar() {
+  const alvo = document.getElementById('conteudoRadar');
+  const meta = document.getElementById('radarMeta');
+  const contador = document.getElementById('contadorRadar');
+  alvo.innerHTML = '';
+
+  const { total, geradoEm, novas, rodando } = radarUltimo;
+  contador.textContent = total ? `${total.toLocaleString('pt-BR')} vagas` : '';
+  meta.textContent = [
+    geradoEm ? `Atualizado em ${new Date(geradoEm).toLocaleString('pt-BR')}` : 'Nenhuma coleta ainda',
+    novas ? `${novas} novas na última coleta` : '',
+    rodando ? 'Coletando agora...' : ''
+  ].filter(Boolean).join(' · ');
+
+  if (radarAcumulado.length === 0) {
+    alvo.appendChild(criarEmptyState(
+      total === 0 && !geradoEm
+        ? 'Nenhuma coleta ainda. Clique em "Atualizar agora" — a primeira leva alguns minutos.'
+        : 'Nenhuma vaga com esses filtros.'
+    ));
+    return;
+  }
+
+  alvo.appendChild(el('div', { class: 'radar-bloco-nota' }, [
+    `Mostrando ${radarAcumulado.length} de ${total.toLocaleString('pt-BR')}, da mais recente para a mais antiga.`
+  ]));
+  radarAcumulado.forEach(v => alvo.appendChild(criarCardRadar(v)));
+
+  if (radarAcumulado.length < total) {
+    alvo.appendChild(el('button', {
+      class: 'btn', type: 'button',
+      onclick: (e) => { e.currentTarget.disabled = true; radarPagina++; carregarRadar(true); }
+    }, [`Carregar mais (${(total - radarAcumulado.length).toLocaleString('pt-BR')} restantes)`]));
+  }
+}
+
+function criarCardRadar(v) {
+  const card = el('div', { class: 'radar-card' });
+  const topo = el('div', { class: 'radar-card-topo' });
+  topo.appendChild(el('span', { class: `radar-data ${classeIdadeRadar(v.publicadaEm)}` }, [
+    formatarIdadeRadar(v.publicadaEm)
+  ]));
+  topo.appendChild(el('a', {
+    class: 'radar-titulo', href: v.link, target: '_blank', rel: 'noopener'
+  }, [v.titulo]));
+  // Vaga que saiu do ar continua listada por um tempo, marcada: some da API antes
+  // de voce ter olhado, e sem a marca voce nem saberia que existiu.
+  if (!v.noAr) topo.appendChild(el('span', { class: 'radar-tag-fora' }, ['saiu do ar']));
+  card.appendChild(topo);
+
+  const linha = [v.empresa, v.plataforma, v.local, RADAR_MODALIDADE[v.modalidade] || ''].filter(Boolean);
+  card.appendChild(el('div', { class: 'projeto-meta' }, [linha.join(' · ')]));
+  return card;
+}
+
+// Idade relativa em vez de data absoluta: "3d" responde na hora a pergunta que a
+// data exige fazer de cabeca.
+function formatarIdadeRadar(iso) {
+  if (!iso) return 'sem data';
+  const dias = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  if (isNaN(dias)) return 'sem data';
+  if (dias <= 0) return 'hoje';
+  if (dias === 1) return 'ontem';
+  if (dias < 30) return `${dias}d`;
+  if (dias < 365) return `${Math.floor(dias / 30)}m`;
+  return `${(dias / 365).toFixed(1)}a`;
+}
+
+function classeIdadeRadar(iso) {
+  if (!iso) return 'idade-desconhecida';
+  const dias = (Date.now() - new Date(iso)) / 86400000;
+  if (dias <= 7) return 'idade-nova';
+  if (dias <= 30) return 'idade-recente';
+  if (dias <= 90) return 'idade-media';
+  return 'idade-velha';
+}
+
+// O radar roda na propria box, disparado pelo server.py. Este botao so pede que
+// ele comece agora; a coleta leva minutos e a lista atualiza quando terminar.
+document.getElementById('btnAtualizarRadar').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  try {
+    const r = await (await fetch('/api/radar/atualizar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+    })).json();
+    mostrarToast(r.iniciou ? 'Coleta iniciada — leva alguns minutos' : 'Uma coleta ja esta em andamento');
+  } catch {
+    mostrarToast('Nao consegui iniciar a coleta', true);
+  } finally {
+    setTimeout(() => { btn.disabled = false; }, 5000);
+  }
+});
+
+['filtroIdadeRadar', 'filtroPlataformaRadar', 'filtroModalidadeRadar', 'filtroNoArRadar']
+  .forEach(id => document.getElementById(id).addEventListener('change', () => carregarRadar()));
+document.getElementById('filtroRadar').addEventListener('input', debounce(() => carregarRadar(), 300));
+
 // === INIT ===
 carregarAgenda();
 carregarAtalhos();
@@ -1153,3 +1297,4 @@ carregarProjetos();
 carregarProspeccao();
 // carregarFinancas(); — aba oculta a pedido do usuário, gestão feita direto na planilha
 carregarVagas();
+carregarRadar();

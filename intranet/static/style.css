@@ -480,3 +480,53 @@ a { color: var(--primary-strong); }
   .tab-btn { padding: 8px 12px; font-size: 0.82rem; }
   .relogio { padding: 6px 12px; font-size: 0.8rem; }
 }
+
+/* === RADAR DE VAGAS === */
+.radar-meta { font-size: 0.7rem; color: var(--muted); margin-bottom: 12px; }
+.radar-check { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); }
+.radar-bloco { margin-bottom: 26px; }
+.radar-bloco-titulo { font-size: 0.85rem; font-weight: 600; margin-bottom: 2px; }
+.radar-bloco-nota { font-size: 0.68rem; color: var(--muted); margin-bottom: 10px; }
+.radar-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+.radar-card:hover { border-color: var(--card-border-strong); background: var(--card-bg-hover); }
+.radar-card-topo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.radar-titulo { font-size: 0.82rem; font-weight: 500; text-decoration: none; }
+.radar-titulo:hover { text-decoration: underline; }
+.radar-data {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 46px;
+  text-align: center;
+  padding: 2px 5px;
+  border-radius: 5px;
+}
+.idade-nova { background: rgba(63,185,80,.18); color: var(--green); }
+.idade-recente { background: rgba(88,166,255,.18); color: var(--blue); }
+.idade-media { background: rgba(227,179,65,.18); color: var(--amber); }
+.idade-velha { background: rgba(248,81,73,.15); color: var(--red); }
+.idade-desconhecida { background: rgba(255,255,255,.08); color: var(--muted); }
+.radar-tag-fora {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  background: rgba(248,81,73,.15);
+  color: var(--red);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.radar-tag-nova {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  background: var(--primary-tint);
+  color: var(--primary-strong);
+  padding: 1px 6px;
+  border-radius: 999px;
+}

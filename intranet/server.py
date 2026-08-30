@@ -4,11 +4,13 @@ import http.cookiejar
 import json
 import shutil
 import socket
+import sqlite3
 import subprocess
+import threading
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -28,6 +30,137 @@ CAMPOS_PROJETO = ("nome", "grupo", "status", "prazo", "descricao", "link", "nota
 
 def ler_json(nome):
     return json.loads((DATA_DIR / nome).read_text(encoding="utf-8"))
+
+
+def ler_json_opcional(nome, padrao):
+    """JSON que pode não existir ainda, por ser gerado por uma rotina externa."""
+    try:
+        return ler_json(nome)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return padrao
+
+
+# === RADAR DE VAGAS: agendamento ===
+# O Termux não traz cron, e o Android mata processos soltos em segundo plano
+# (mesmo motivo pelo qual o sshd roda em foreground). Este servidor já é um
+# processo vivo e protegido, então ele é quem dispara a rotina.
+#
+# O radar roda como SUBPROCESSO, não dentro deste processo: se ele travar,
+# estourar memória ou morrer, a intranet continua de pé.
+RADAR_SCRIPT = BASE_DIR / "radar.py"
+RADAR_LOG = DATA_DIR / "radar" / "radar.log"
+RADAR_DB = DATA_DIR / "radar.db"
+RADAR_PAGINA = 50
+_radar_processo = None
+
+
+def radar_consultar(params):
+    """Filtra as vagas em SQL, não em JavaScript.
+
+    O banco passa de dezenas de milhares de linhas. Mandar isso para o navegador
+    de uma TV box para ele peneirar em memória seria pedir para a página travar —
+    o SQLite resolve em milissegundos e o browser recebe 50 linhas por vez.
+    """
+    if not RADAR_DB.exists():
+        return {"total": 0, "vagas": [], "geradoEm": None, "novas": 0}
+
+    onde, valores = ["1=1"], []
+    termo = (params.get("q", [""])[0] or "").strip()
+    if termo:
+        onde.append("(titulo LIKE ? OR empresa LIKE ? OR local LIKE ?)")
+        valores += [f"%{termo}%"] * 3
+
+    plataforma = (params.get("plataforma", [""])[0] or "").strip()
+    if plataforma in ("Gupy", "InHire"):
+        onde.append("plataforma = ?")
+        valores.append(plataforma)
+
+    modalidade = (params.get("modalidade", [""])[0] or "").strip()
+    if modalidade in ("remote", "hybrid", "on-site"):
+        onde.append("modalidade = ?")
+        valores.append(modalidade)
+
+    try:
+        dias = int(params.get("dias", ["0"])[0])
+    except ValueError:
+        dias = 0
+    if dias > 0:
+        corte = datetime.now(timezone.utc) - timedelta(days=dias)
+        onde.append("publicada_em >= ?")
+        valores.append(corte.isoformat())
+
+    # "No ar" = vista na última coleta CONCLUÍDA. Derivar disso, em vez de guardar
+    # um booleano, é o que impede uma coleta interrompida de marcar o banco inteiro
+    # como fora do ar — num aparelho que mata processos, isso aconteceria.
+    if params.get("apenasNoAr", ["0"])[0] == "1":
+        onde.append("coleta = (SELECT valor FROM meta WHERE chave='ultimaColetaOk')")
+
+    try:
+        pagina = max(0, int(params.get("pagina", ["0"])[0]))
+    except ValueError:
+        pagina = 0
+
+    filtro = " AND ".join(onde)
+    con = sqlite3.connect(f"file:{RADAR_DB}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    try:
+        total = con.execute(f"SELECT COUNT(*) FROM vagas WHERE {filtro}", valores).fetchone()[0]
+        # Sem data vai para o fim: não dá para julgá-la pelo critério que você usa.
+        linhas = con.execute(
+            f"""SELECT link, titulo, empresa, plataforma, local, modalidade,
+                       publicada_em,
+                       coleta = (SELECT valor FROM meta WHERE chave='ultimaColetaOk') AS no_ar
+                FROM vagas WHERE {filtro}
+                ORDER BY publicada_em IS NULL, publicada_em DESC, link
+                LIMIT ? OFFSET ?""",
+            valores + [RADAR_PAGINA, pagina * RADAR_PAGINA],
+        ).fetchall()
+        meta = dict(con.execute("SELECT chave, valor FROM meta").fetchall())
+    finally:
+        con.close()
+
+    vagas = [{
+        "link": l["link"], "titulo": l["titulo"], "empresa": l["empresa"],
+        "plataforma": l["plataforma"], "local": l["local"],
+        "modalidade": l["modalidade"], "publicadaEm": l["publicada_em"],
+        "noAr": bool(l["no_ar"]),
+    } for l in linhas]
+
+    return {
+        "total": total, "vagas": vagas, "pagina": pagina, "porPagina": RADAR_PAGINA,
+        "geradoEm": meta.get("geradoEm"),
+        "novas": int(meta.get("novasUltimaExecucao", 0) or 0),
+    }
+
+
+def radar_rodando():
+    return _radar_processo is not None and _radar_processo.poll() is None
+
+
+def disparar_radar():
+    """Inicia o radar se não houver outro em andamento. Devolve se iniciou."""
+    global _radar_processo
+    if radar_rodando() or not RADAR_SCRIPT.exists():
+        return False
+    RADAR_LOG.parent.mkdir(parents=True, exist_ok=True)
+    log = open(RADAR_LOG, "a", encoding="utf-8")
+    _radar_processo = subprocess.Popen(
+        ["python3", str(RADAR_SCRIPT)], stdout=log, stderr=subprocess.STDOUT, cwd=str(BASE_DIR)
+    )
+    return True
+
+
+def agendador_radar(intervalo_horas):
+    # Espera antes da primeira execução. O boot desse aparelho é lento e já sobe
+    # AdGuard, Tailscale e sshd juntos; disparar centenas de requisições em cima
+    # disso deixa tudo arrastado justo quando você abriu a página para olhar.
+    time.sleep(300)
+    while True:
+        try:
+            disparar_radar()
+        except Exception as e:
+            print(f"[radar] falha ao disparar: {e}")
+        time.sleep(max(1, intervalo_horas) * 3600)
 
 
 def _backup_se_necessario(caminho):
@@ -214,6 +347,11 @@ class Handler(BaseHTTPRequestHandler):
             self._enviar_json(ler_json("prospeccao.json"))
         elif self.path == "/api/agenda":
             self._enviar_json(ler_json("agenda.json"))
+        elif self.path.split("?")[0] == "/api/radar":
+            params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            dados = radar_consultar(params)
+            dados["rodando"] = radar_rodando()
+            self._enviar_json(dados)
         elif self.path == "/api/financas":
             self._enviar_json(sheets_ler(
                 CONFIG.get("financas_script_url", ""), CONFIG.get("sheets_token", ""),
@@ -254,7 +392,10 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        if self.path == "/api/projetos" and isinstance(dados, list):
+        if self.path == "/api/radar/atualizar":
+            iniciou = disparar_radar()
+            self._enviar_json({"iniciou": iniciou, "rodando": radar_rodando()})
+        elif self.path == "/api/projetos" and isinstance(dados, list):
             dados = com_timestamps(dados)
             gravar_json("projetos.json", dados)
             self._enviar_json(dados)
@@ -289,6 +430,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    intervalo = CONFIG.get("radar_intervalo_horas", 6)
+    if intervalo and RADAR_SCRIPT.exists():
+        threading.Thread(target=agendador_radar, args=(intervalo,), daemon=True).start()
+        print(f"Radar de vagas: atualizando a cada {intervalo}h (0 em config.json desliga)")
+
     servidor = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     ip_local = socket.gethostbyname(socket.gethostname())
     print(f"Intranet rodando em:")

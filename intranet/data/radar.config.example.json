@@ -1,0 +1,6 @@
+{
+  "queries": [],
+  "esquecerAposDias": 120,
+  "threads": 4,
+  "maxDatasPorExecucao": 600
+}

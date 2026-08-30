@@ -19,6 +19,7 @@
   <button class="tab-btn" data-view="prospeccao">Prospecção</button>
   <!-- Controle Financeiro oculto a pedido do usuário — gestão feita direto na planilha -->
   <button class="tab-btn" data-view="vagas">Gestão de Vagas</button>
+  <button class="tab-btn" data-view="radar">Radar <span class="contador-badge" id="badgeRadar"></span></button>
 </nav>
 
 <div class="view" id="viewInicio">
@@ -151,6 +152,41 @@
       </div>
       <div id="listaVagas"></div>
     </div>
+  </div>
+
+</div>
+
+<div class="view hidden" id="viewRadar">
+
+  <!-- RADAR DE VAGAS — alimentado por radar.py, que roda na própria box.
+       Lista ordenada por data, sem score: quem decide o que serve é você. -->
+  <div class="section">
+    <div class="section-title">Radar de Vagas <span class="contador-badge" id="contadorRadar"></span></div>
+    <div class="radar-meta" id="radarMeta"></div>
+    <div class="projetos-toolbar">
+      <input type="text" id="filtroRadar" placeholder="Filtrar por vaga, empresa ou local...">
+      <select id="filtroIdadeRadar">
+        <option value="0">Qualquer data</option>
+        <option value="3">Últimos 3 dias</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="90">Últimos 90 dias</option>
+      </select>
+      <select id="filtroPlataformaRadar">
+        <option value="">Gupy e InHire</option>
+        <option value="Gupy">Só Gupy</option>
+        <option value="InHire">Só InHire</option>
+      </select>
+      <select id="filtroModalidadeRadar">
+        <option value="">Qualquer modalidade</option>
+        <option value="remote">Remoto</option>
+        <option value="hybrid">Híbrido</option>
+        <option value="on-site">Presencial</option>
+      </select>
+      <label class="radar-check"><input type="checkbox" id="filtroNoArRadar" checked> Só as no ar</label>
+      <button class="btn" type="button" id="btnAtualizarRadar">Atualizar agora</button>
+    </div>
+    <div id="conteudoRadar"></div>
   </div>
 
 </div>

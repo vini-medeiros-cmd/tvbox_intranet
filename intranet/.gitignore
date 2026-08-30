@@ -1,5 +1,10 @@
 data/*.json
 !data/*.example.json
+# lista de empresas da InHire: e o ativo do radar, nao e dado pessoal
+!data/inhire-tenants.json
+# cache e estado do radar (regeneravel)
+data/radar/
+data/radar.db*
 data/backups/
 __pycache__/
 *.pyc
