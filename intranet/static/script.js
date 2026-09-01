@@ -1226,15 +1226,30 @@ function renderizarRadar() {
   }
 }
 
+// radar.py já reconstrói o link certo (vagas.solides.com.br/vaga/{id}/...)
+// pra vagas nativas da Solides (id numérico). Isto aqui é só rede de
+// segurança pro resto: vagas de integração externa (id alfanumérico) caem de
+// volta no redirectLink original da API, que testamos e está quebrado —
+// domínio solides.jobs não abre, e "empresa sem slug" vem com espaço no host
+// ("Alfa Moove.solides.jobs"). Preferimos manter a vaga (empresa/salário/data
+// ainda são informação real) e só tirar o link, a mandar pra um site que não abre.
+function linkRadarValido(link) {
+  if (!link) return false;
+  const host = link.replace(/^https?:\/\//, '').split('/')[0];
+  if (/\s/.test(host)) return false;
+  if (/(^|\.)solides\.jobs$/i.test(host)) return false;
+  return true;
+}
+
 function criarCardRadar(v) {
   const card = el('div', { class: 'radar-card' });
   const topo = el('div', { class: 'radar-card-topo' });
   topo.appendChild(el('span', { class: `radar-data ${classeIdadeRadar(v.publicadaEm)}` }, [
     formatarIdadeRadar(v.publicadaEm)
   ]));
-  topo.appendChild(el('a', {
-    class: 'radar-titulo', href: v.link, target: '_blank', rel: 'noopener'
-  }, [v.titulo]));
+  topo.appendChild(linkRadarValido(v.link)
+    ? el('a', { class: 'radar-titulo', href: v.link, target: '_blank', rel: 'noopener' }, [v.titulo])
+    : el('span', { class: 'radar-titulo radar-titulo-sem-link', title: 'Link inválido na origem (bug da Sólides)' }, [v.titulo]));
   // Vaga que saiu do ar continua listada por um tempo, marcada: some da API antes
   // de voce ter olhado, e sem a marca voce nem saberia que existiu.
   if (!v.noAr) topo.appendChild(el('span', { class: 'radar-tag-fora' }, ['saiu do ar']));

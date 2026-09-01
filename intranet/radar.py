@@ -34,9 +34,11 @@ as 10 mil mais recentes.
 """
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -298,6 +300,30 @@ def buscar_gupy(termo=None):
 
 # ---------------------------------------------------------------- Solides
 
+def slugificar(texto):
+    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", sem_acento.lower())).strip("-")
+
+
+def link_solides(bruta):
+    """O redirectLink que a API devolve está quebrado na prática — testado direto
+    no navegador, os dois domínios que ela usa (`{empresa}.solides.jobs` e
+    `{empresa}.vagas.solides.com.br`) não abrem, mesmo para slugs limpos.
+
+    O que abre de verdade é o link SEM subdomínio de empresa que o próprio site
+    da Sólides usa nos resultados de busca: vagas.solides.com.br/vaga/{id}/{slug}.
+    Só funciona quando `id` é numérico — vagas nativas da plataforma. IDs
+    alfanuméricos (tipo "mvgKhr7zoG") são de integrações externas via ATS e não
+    têm página nesse domínio; para essas, não existe link confiável e ficam sem
+    link (ver linkRadarValido no frontend).
+    """
+    id_vaga = bruta.get("id")
+    if isinstance(id_vaga, int) or (isinstance(id_vaga, str) and id_vaga.isdigit()):
+        slug = slugificar(bruta.get("title") or "")
+        return f"https://vagas.solides.com.br/vaga/{id_vaga}/{slug}"
+    return bruta.get("redirectLink") or ""
+
+
 def buscar_solides(max_paginas):
     """Busca global de verdade — diferente da InHire, não precisa de lista de empresas.
 
@@ -329,7 +355,7 @@ def buscar_solides(max_paginas):
 
     vagas = []
     for bruta in (item for pagina_ in paginas for item in pagina_):
-        link = bruta.get("redirectLink") or ""
+        link = link_solides(bruta)
         if not link:
             continue
         cidade = (bruta.get("city") or {}).get("name") or ""
