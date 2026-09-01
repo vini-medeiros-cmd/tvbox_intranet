@@ -314,14 +314,15 @@ def link_solides(bruta):
     da Sólides usa nos resultados de busca: vagas.solides.com.br/vaga/{id}/{slug}.
     Só funciona quando `id` é numérico — vagas nativas da plataforma. IDs
     alfanuméricos (tipo "mvgKhr7zoG") são de integrações externas via ATS e não
-    têm página nesse domínio; para essas, não existe link confiável e ficam sem
-    link (ver linkRadarValido no frontend).
+    têm página nesse domínio, e não existe link confiável pra elas — em vez de
+    guardar com o redirectLink quebrado, a vaga nem entra no banco (ver
+    buscar_solides: link vazio = descartada).
     """
     id_vaga = bruta.get("id")
     if isinstance(id_vaga, int) or (isinstance(id_vaga, str) and id_vaga.isdigit()):
         slug = slugificar(bruta.get("title") or "")
         return f"https://vagas.solides.com.br/vaga/{id_vaga}/{slug}"
-    return bruta.get("redirectLink") or ""
+    return ""
 
 
 def buscar_solides(max_paginas):

@@ -498,7 +498,6 @@ a { color: var(--primary-strong); }
 .radar-card-topo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .radar-titulo { font-size: 0.82rem; font-weight: 500; text-decoration: none; color: var(--card-foreground); }
 .radar-titulo:hover { text-decoration: underline; }
-.radar-titulo-sem-link { text-decoration: line-through; text-decoration-color: var(--card-border-strong); opacity: .75; cursor: help; }
 .radar-data {
   font-family: var(--mono);
   font-size: 0.65rem;

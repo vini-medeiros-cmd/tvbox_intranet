@@ -1204,7 +1204,12 @@ function renderizarRadar() {
     rodando ? 'Coletando agora...' : ''
   ].filter(Boolean).join(' · ');
 
-  if (radarAcumulado.length === 0) {
+  // Vaga sem link confiável (bug de dados da Sólides, ver linkRadarValido) nem
+  // entra na lista — sem isso, sobrava clicar em vaga sem link algum pra achar
+  // uma que abrisse de verdade.
+  const comLink = radarAcumulado.filter(v => linkRadarValido(v.link));
+
+  if (comLink.length === 0) {
     alvo.appendChild(criarEmptyState(
       total === 0 && !geradoEm
         ? 'Nenhuma coleta ainda. Clique em "Atualizar agora" — a primeira leva alguns minutos.'
@@ -1214,9 +1219,9 @@ function renderizarRadar() {
   }
 
   alvo.appendChild(el('div', { class: 'radar-bloco-nota' }, [
-    `Mostrando ${radarAcumulado.length} de ${total.toLocaleString('pt-BR')}, da mais recente para a mais antiga.`
+    `Mostrando ${comLink.length} de ${total.toLocaleString('pt-BR')}, da mais recente para a mais antiga.`
   ]));
-  radarAcumulado.forEach(v => alvo.appendChild(criarCardRadar(v)));
+  comLink.forEach(v => alvo.appendChild(criarCardRadar(v)));
 
   if (radarAcumulado.length < total) {
     alvo.appendChild(el('button', {
@@ -1247,9 +1252,9 @@ function criarCardRadar(v) {
   topo.appendChild(el('span', { class: `radar-data ${classeIdadeRadar(v.publicadaEm)}` }, [
     formatarIdadeRadar(v.publicadaEm)
   ]));
-  topo.appendChild(linkRadarValido(v.link)
-    ? el('a', { class: 'radar-titulo', href: v.link, target: '_blank', rel: 'noopener' }, [v.titulo])
-    : el('span', { class: 'radar-titulo radar-titulo-sem-link', title: 'Link inválido na origem (bug da Sólides)' }, [v.titulo]));
+  topo.appendChild(el('a', {
+    class: 'radar-titulo', href: v.link, target: '_blank', rel: 'noopener'
+  }, [v.titulo]));
   // Vaga que saiu do ar continua listada por um tempo, marcada: some da API antes
   // de voce ter olhado, e sem a marca voce nem saberia que existiu.
   if (!v.noAr) topo.appendChild(el('span', { class: 'radar-tag-fora' }, ['saiu do ar']));
