@@ -530,3 +530,5 @@ a { color: var(--primary-strong); }
   padding: 1px 6px;
   border-radius: 999px;
 }
+
+.radar-salario { font-size: 0.68rem; color: var(--green); margin-top: 3px; font-family: var(--mono); }

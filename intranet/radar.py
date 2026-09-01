@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Radar de Vagas — coleta vagas da Gupy e da InHire num banco SQLite.
+Radar de Vagas — coleta vagas da Gupy, da InHire e da Sólides num banco SQLite.
 
     python3 radar.py
 
@@ -12,13 +12,17 @@ em data/radar.db. Quem filtra é você, pela busca da intranet — e o filtro ro
 SQL, não no navegador, porque uma TV box não aguenta peneirar dezenas de milhares
 de linhas em JavaScript.
 
-Dois limites vêm das APIs, não deste script:
+Três limites vêm das APIs, não deste script:
 
   * Gupy: `offset + limit` precisa ser <= 10.000. Sem termo de busca, só dá para
     alcançar as 10.000 vagas MAIS RECENTES (das 84 mil publicadas). Como a API
     devolve em ordem de data, isso cobre os últimos dias — e é exatamente o que
     interessa em quem roda de 6 em 6 horas. Termos de busca em radar.config.json
     abrem uma janela de 10.000 adicional para cada termo, se quiser ir mais fundo.
+
+  * Sólides: tem busca global (72 mil vagas), mas `take` acima de 12 volta vazio e
+    a paginação repete itens entre páginas — a cobertura dela é estatística, não
+    exaustiva. Ver o comentário em buscar_solides(). É a única que publica salário.
 
   * InHire: não tem busca global. Cada requisição é de UMA empresa (header
     X-Tenant), então a lista de data/inhire-tenants.json é o que torna a busca
@@ -51,6 +55,7 @@ LOCK_FILE = CACHE_DIR / "radar.lock"
 
 GUPY_API = "https://employability-portal.gupy.io/api/v1/jobs"
 INHIRE_API = "https://api.inhire.app/job-posts/public/pages"
+SOLIDES_API = "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new"
 
 # A API da InHire responde 403 para User-Agent de cliente HTTP padrão.
 # Sem isto, TUDO volta vazio e sem erro aparente.
@@ -62,12 +67,20 @@ USER_AGENT = (
 GUPY_PAGE = 100
 # Teto da API: offset + limit não pode passar disso. Não é escolha nossa.
 GUPY_MAX_OFFSET = 10_000
+# A Solides ignora take acima de 12 e devolve lista vazia. Também não é escolha nossa.
+SOLIDES_PAGE = 12
 
 DEFAULTS = {
     # Vazio = puxa a janela geral (as 10.000 mais recentes). Cada termo aqui abre
     # uma janela de 10.000 ADICIONAL, para alcançar vagas mais antigas de uma área.
     "queries": [],
     "esquecerAposDias": 120,
+    # Páginas da Solides por execução (12 vagas cada). São 72 mil vagas no total e
+    # a API só entrega 12 por vez — varrer tudo levaria ~3h. Como ela devolve em
+    # ordem de data, 150 páginas (1.800 vagas) cobrem uns 3 dias de publicações,
+    # folga confortável para quem roda de 6 em 6 horas. Aumente para fazer um
+    # backfill histórico; o banco acumula o que já entrou.
+    "maxPaginasSolides": 150,
     # A box tem 4 núcleos fracos. A rede é o gargalo, não o processador —
     # concorrência alta não acelera e só aumenta a chance de o Android matar tudo.
     "threads": 4,
@@ -166,6 +179,8 @@ CREATE TABLE IF NOT EXISTS vagas (
   plataforma   TEXT,
   local        TEXT,
   modalidade   TEXT,
+  -- Só a Solides publica salário; nas outras fica vazio.
+  salario      TEXT,
   publicada_em TEXT,
   vista_em     TEXT NOT NULL,
   -- Carimbo da coleta que viu esta vaga por último. "No ar" é derivado disto:
@@ -202,12 +217,12 @@ def salvar(con, vagas, agora):
     con.executemany(
         """
         INSERT INTO vagas (link, titulo, empresa, plataforma, local, modalidade,
-                           publicada_em, vista_em, coleta, busca)
+                           salario, publicada_em, vista_em, coleta, busca)
         VALUES (:link, :titulo, :empresa, :plataforma, :local, :modalidade,
-                :publicada_em, :vista_em, :vista_em, :busca)
+                :salario, :publicada_em, :vista_em, :vista_em, :busca)
         ON CONFLICT(link) DO UPDATE SET
           titulo=excluded.titulo, empresa=excluded.empresa, local=excluded.local,
-          modalidade=excluded.modalidade,
+          modalidade=excluded.modalidade, salario=excluded.salario,
           publicada_em=COALESCE(excluded.publicada_em, vagas.publicada_em),
           coleta=excluded.coleta
         """,
@@ -274,10 +289,76 @@ def buscar_gupy(termo=None):
             "plataforma": "Gupy",
             "local": " / ".join(x for x in [bruta.get("city"), bruta.get("state"), bruta.get("country")] if x),
             "modalidade": normalizar_modalidade(bruta.get("workplaceType")),
+            "salario": "",
             "publicada_em": bruta.get("publishedDate"),
             "busca": termo or "",
         })
     return vagas
+
+
+# ---------------------------------------------------------------- Solides
+
+def buscar_solides(max_paginas):
+    """Busca global de verdade — diferente da InHire, não precisa de lista de empresas.
+
+    Três limites da API, todos medidos:
+
+      * `take` acima de 12 devolve lista vazia. São ~6.000 requisições para as 72
+        mil vagas, o que inviabiliza varrer tudo de uma vez.
+
+      * `page` NÃO tem teto de profundidade (a Gupy trava em offset 10.000), então
+        o histórico inteiro é alcançável — só não numa execução só.
+
+      * A PAGINAÇÃO É INSTÁVEL. O mesmo id aparece nas páginas 1, 2, 3, 6 e 8: de
+        360 itens buscados, 193 eram únicos. A ordenação é por data SEM hora, então
+        vagas do mesmo dia empatam e o banco devolve em ordem arbitrária a cada
+        consulta. Nenhum parâmetro de ordenação corrige (testados orderBy, sort,
+        order, sortBy — todos com a mesma sobreposição de 8 em 12).
+
+    Consequência prática: a cobertura da Solides é ESTATÍSTICA, não exaustiva. Cada
+    execução amostra ~54% de itens novos e o banco acumula o resto ao longo das
+    rodadas. Não dá para garantir "vi todas as vagas de hoje na Solides" — dá para
+    garantir que, rodando de 6 em 6 horas, a cobertura cresce sozinha.
+    """
+    def pagina(p):
+        dados = http_json(f"{SOLIDES_API}?take={SOLIDES_PAGE}&page={p}")
+        return ((dados or {}).get("data") or {}).get("data") or []
+
+    with ThreadPoolExecutor(max_workers=THREADS) as executor:
+        paginas = list(executor.map(pagina, range(1, max_paginas + 1)))
+
+    vagas = []
+    for bruta in (item for pagina_ in paginas for item in pagina_):
+        link = bruta.get("redirectLink") or ""
+        if not link:
+            continue
+        cidade = (bruta.get("city") or {}).get("name") or ""
+        estado = (bruta.get("state") or {}).get("code") or ""
+        vagas.append({
+            "link": link,
+            "titulo": (bruta.get("title") or "").strip(),
+            "empresa": (bruta.get("companyName") or "").strip(),
+            "plataforma": "Solides",
+            "local": " / ".join(x for x in [cidade, estado] if x),
+            "modalidade": normalizar_modalidade(
+                "remote" if bruta.get("homeOffice") else bruta.get("jobType")),
+            "publicada_em": bruta.get("createdAt"),
+            "salario": faixa_salarial(bruta.get("salary")),
+            "busca": "",
+        })
+    return vagas
+
+
+def faixa_salarial(salario):
+    """Texto curto da faixa. A Solides é a única das três que publica salário."""
+    if not isinstance(salario, dict) or salario.get("negotiable"):
+        return ""
+    ini, fim = salario.get("initialRange"), salario.get("finalRange")
+    if not ini and not fim:
+        return ""
+    if ini and fim and ini != fim:
+        return f"R$ {ini:,.0f} a {fim:,.0f}".replace(",", ".")
+    return f"R$ {(ini or fim):,.0f}".replace(",", ".")
 
 
 # ---------------------------------------------------------------- InHire
@@ -306,6 +387,7 @@ def inhire_indice():
                 "plataforma": "InHire",
                 "local": bruta.get("location") or "",
                 "modalidade": normalizar_modalidade(bruta.get("workplaceType")),
+                "salario": "",
                 "publicada_em": None,
                 "busca": "",
                 "_jobId": job_id,
@@ -403,6 +485,13 @@ def main():
         extra = buscar_gupy(termo)
         total_novas += salvar(con, extra, agora)
         log(f"Gupy '{termo}': +{len(extra)} vagas.")
+
+    paginas_solides = int(config["maxPaginasSolides"])
+    if paginas_solides > 0:
+        log(f"Solides: puxando as {paginas_solides} páginas mais recentes...")
+        solides = buscar_solides(paginas_solides)
+        total_novas += salvar(con, solides, agora)
+        log(f"Solides: {len(solides)} vagas.")
 
     log("InHire: montando índice de todas as empresas...")
     inhire = preencher_datas_inhire(inhire_indice(), int(config["maxDatasPorExecucao"]))

@@ -1242,6 +1242,8 @@ function criarCardRadar(v) {
 
   const linha = [v.empresa, v.plataforma, v.local, RADAR_MODALIDADE[v.modalidade] || ''].filter(Boolean);
   card.appendChild(el('div', { class: 'projeto-meta' }, [linha.join(' · ')]));
+  // Só a Solides publica salário; nas outras o campo vem vazio e a linha nao aparece.
+  if (v.salario) card.appendChild(el('div', { class: 'radar-salario' }, [v.salario]));
   return card;
 }
 

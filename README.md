@@ -44,14 +44,14 @@ Acesse em `http://localhost:8080`.
 - **Senhas** — lista simples de credenciais
 - **Infra** — status ao vivo de serviços, tempo ligado e espaço em disco do host
 - **Projetos** — quadro com status, prazo, notas e filtro, com arquivamento automático dos concluídos
-- **Radar de Vagas** — busca vagas na Gupy e na InHire e lista por data de publicação
+- **Radar de Vagas** — coleta vagas da Gupy, InHire e Sólides e lista por data de publicação
 
 Todos os dados ficam em arquivos JSON simples no disco, com backup automático a cada gravação (mantém as últimas 5 versões).
 
 ## Radar de Vagas
 
-Coleta vagas da **Gupy** e da **InHire** e guarda num SQLite, para você buscar e
-decidir. Roda na própria box, em [`intranet/radar.py`](./intranet/radar.py) — só
+Coleta vagas da **Gupy**, da **InHire** e da **Sólides** e guarda num SQLite, para
+você buscar e decidir. Roda na própria box, em [`intranet/radar.py`](./intranet/radar.py) — só
 biblioteca padrão, nada de pip, nada de `node_modules`.
 
 ```bash
@@ -71,20 +71,36 @@ servidor já é um processo vivo e protegido, então é ele quem agenda.
 ### Sem filtro por cargo
 
 A coleta puxa **tudo** o que as APIs deixam alcançar; quem filtra é você, pela busca
-da aba. Foram 18.687 vagas na primeira coleta, de atendente de restaurante a
-enfermeiro a desenvolvedor.
+da aba. Foram 20.108 vagas em duas coletas, de atendente de restaurante a enfermeiro
+a desenvolvedor.
 
-O filtro roda em **SQL, não em JavaScript**. Mandar 18 mil linhas para o navegador
+O filtro roda em **SQL, não em JavaScript**. Mandar 20 mil linhas para o navegador
 de uma TV box peneirar em memória travaria a página; o SQLite responde em ~20ms e o
 browser nunca recebe mais que 50 linhas.
 
-### Dois limites que vêm das APIs, não do script
+### Três limites que vêm das APIs, não do script
 
 **Gupy:** `offset + limit` precisa ser ≤ 10.000. Sem termo de busca dá para alcançar
 só as **10.000 mais recentes** das 84 mil publicadas. Como a API devolve em ordem de
 data, isso cobre os últimos dias — que é o que interessa em quem roda de 6 em 6h.
 Termos em `radar.config.json` abrem uma janela de 10.000 adicional cada, para ir mais
 fundo numa área específica.
+
+**Sólides:** tem busca global de verdade (72 mil vagas, sem autenticação) e, ao
+contrário da Gupy, **sem teto de profundidade** — o histórico inteiro é alcançável.
+Em compensação `take` acima de 12 devolve lista vazia, então varrer tudo seria ~6.000
+requisições, ou 3 horas. A coleta pega as 150 páginas mais recentes por rodada.
+
+E há um defeito na paginação deles: **o mesmo id aparece em páginas diferentes**
+(1, 2, 3, 6 e 8 no teste) — de 360 itens buscados, 193 eram únicos. Eles ordenam por
+data sem hora, então vagas do mesmo dia empatam e voltam em ordem arbitrária a cada
+consulta; nenhum parâmetro de ordenação corrige. Isso torna a cobertura da Sólides
+**estatística, não exaustiva**: cada rodada amostra e o banco acumula o resto. Medido:
+as mesmas 150 páginas renderam 891 vagas na primeira coleta e +252 inéditas na
+segunda. É a única plataforma das três onde não dá para afirmar "vi tudo o que saiu
+hoje".
+
+Em troca, é a única que publica **salário** — aparece no card quando existe.
 
 **InHire:** não tem busca global. Cada requisição é de uma empresa (header
 `X-Tenant`), então [`data/inhire-tenants.json`](./intranet/data/inhire-tenants.json)
@@ -123,8 +139,9 @@ leva dois segundos e não erra como um score erraria.
 
 ### Custo na box
 
-Medido: **55 MB de pico de RAM**, ~5s de CPU por rodada (o resto é espera de rede),
-**8,1 MB** de banco para 18.687 vagas. A coleta leva ~5 min numa máquina de mesa.
+Medido: **55 MB de pico de RAM**, poucos segundos de CPU por rodada (o resto é espera
+de rede), **10 MB** de banco para 20.108 vagas. A coleta das três plataformas leva
+~7 min numa máquina de mesa; na box, espere mais.
 
 ## Aviso de segurança
 

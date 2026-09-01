@@ -71,7 +71,7 @@ def radar_consultar(params):
         valores += [f"%{termo}%"] * 3
 
     plataforma = (params.get("plataforma", [""])[0] or "").strip()
-    if plataforma in ("Gupy", "InHire"):
+    if plataforma in ("Gupy", "InHire", "Solides"):
         onde.append("plataforma = ?")
         valores.append(plataforma)
 
@@ -107,7 +107,7 @@ def radar_consultar(params):
         total = con.execute(f"SELECT COUNT(*) FROM vagas WHERE {filtro}", valores).fetchone()[0]
         # Sem data vai para o fim: não dá para julgá-la pelo critério que você usa.
         linhas = con.execute(
-            f"""SELECT link, titulo, empresa, plataforma, local, modalidade,
+            f"""SELECT link, titulo, empresa, plataforma, local, modalidade, salario,
                        publicada_em,
                        coleta = (SELECT valor FROM meta WHERE chave='ultimaColetaOk') AS no_ar
                 FROM vagas WHERE {filtro}
@@ -122,7 +122,8 @@ def radar_consultar(params):
     vagas = [{
         "link": l["link"], "titulo": l["titulo"], "empresa": l["empresa"],
         "plataforma": l["plataforma"], "local": l["local"],
-        "modalidade": l["modalidade"], "publicadaEm": l["publicada_em"],
+        "modalidade": l["modalidade"], "salario": l["salario"],
+        "publicadaEm": l["publicada_em"],
         "noAr": bool(l["no_ar"]),
     } for l in linhas]
 

@@ -2,5 +2,6 @@
   "queries": [],
   "esquecerAposDias": 120,
   "threads": 4,
+  "maxPaginasSolides": 150,
   "maxDatasPorExecucao": 600
 }
