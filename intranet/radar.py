@@ -32,13 +32,13 @@ O banco acumula: a cada execução as vagas novas entram e as antigas ficam. Com
 tempo você tem um histórico que a API da Gupy não devolve, porque ela só deixa ver
 as 10 mil mais recentes.
 """
+import html
 import json
 import os
 import re
 import sqlite3
 import sys
 import time
-import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -90,6 +90,11 @@ DEFAULTS = {
     # o bastante para o Android matar o processo. O cache converge em algumas
     # execuções; para pular a espera, copie o cache pronto (veja o README).
     "maxDatasPorExecucao": 600,
+    # Páginas por cidade/modalidade no InfoJobs (20 vagas cada). 10 cidades x 2
+    # modalidades x 3 páginas = 60 requisições HTML por execução — cobertura das
+    # vagas mais recentes de cada cidade, não histórico (não há como saber o
+    # total sem uma API de verdade). 0 desliga essa fonte.
+    "paginasInfoJobsPorCidade": 3,
 }
 THREADS = DEFAULTS["threads"]
 
@@ -300,11 +305,6 @@ def buscar_gupy(termo=None):
 
 # ---------------------------------------------------------------- Solides
 
-def slugificar(texto):
-    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", sem_acento.lower())).strip("-")
-
-
 def link_solides(bruta):
     """O redirectLink que a API devolve está quebrado na prática — testado direto
     no navegador, os dois domínios que ela usa (`{empresa}.solides.jobs` e
@@ -320,7 +320,7 @@ def link_solides(bruta):
     """
     id_vaga = bruta.get("id")
     if isinstance(id_vaga, int) or (isinstance(id_vaga, str) and id_vaga.isdigit()):
-        slug = slugificar(bruta.get("title") or "")
+        slug = slug_titulo(bruta.get("title") or "")
         return f"https://vagas.solides.com.br/vaga/{id_vaga}/{slug}"
     return ""
 
@@ -386,6 +386,119 @@ def faixa_salarial(salario):
     if ini and fim and ini != fim:
         return f"R$ {ini:,.0f} a {fim:,.0f}".replace(",", ".")
     return f"R$ {(ini or fim):,.0f}".replace(",", ".")
+
+
+# ---------------------------------------------------------------- InfoJobs
+
+# O InfoJobs não tem API pública nem busca nacional — cada URL redireciona pra
+# uma cidade por geolocalização do IP de quem pede. "empregos-em-{cidade}.aspx"
+# só fica na cidade pedida se vier com o UF (",-sp", ",-rj" etc.); sem isso,
+# sempre volta pra São Paulo. Cobertura por cidade, não por país — mesma
+# limitação estrutural da InHire (sem busca global), só que aqui não dá pra
+# cobrir com uma lista fechada de "tenants": são milhares de municípios. A
+# lista abaixo é só as principais capitais/cidades, por escolha do usuário.
+INFOJOBS_CIDADES = [
+    ("sao-paulo", "sp"), ("rio-janeiro", "rj"), ("belo-horizonte", "mg"),
+    ("brasilia", "df"), ("curitiba", "pr"), ("porto-alegre", "rs"),
+    ("salvador", "ba"), ("recife", "pe"), ("fortaleza", "ce"), ("campinas", "sp"),
+]
+INFOJOBS_BASE = "https://www.infojobs.com.br"
+
+# Cada card de vaga na página é um bloco que começa nesta marca (id + link) e
+# tem título, data e empresa logo depois. Regex, não html.parser: o HTML tem
+# muito conteúdo alheio (tooltips, ícones) entre os campos que interessam, e
+# ancorar por essas marcas específicas é mais direto que montar uma árvore
+# inteira só pra depois procurar nela.
+_INFOJOBS_CARD_RE = re.compile(r'data-id="(\d+)"\s+class="[^"]*js_rowCard[^"]*"\s+data-href="([^"]+)"')
+_INFOJOBS_TITULO_RE = re.compile(r'js_vacancyTitle">\s*([^<]+?)\s*<')
+_INFOJOBS_DATA_RE = re.compile(r'class="js_date" data-value="(\d{4})/(\d{2})/(\d{2}) (\d{2}):(\d{2}):(\d{2})"')
+# O link da empresa às vezes é /empresa-{slug}__-{id}.aspx, às vezes uma URL
+# "vanity" tipo /personale (perfis com página própria) — ancorar na classe do
+# link, não no formato da URL, pega os dois.
+_INFOJOBS_EMPRESA_RE = re.compile(
+    r'class="text-body text-decoration-none" href="https://www\.infojobs\.com\.br/[^"]*"[^>]*>\s*(.*?)</a>', re.S
+)
+_INFOJOBS_TAG_RE = re.compile(r'<[^>]+>')
+
+
+def _infojobs_texto_limpo(html_bruto):
+    return html.unescape(_INFOJOBS_TAG_RE.sub(' ', html_bruto)).split()
+
+
+def http_texto(url):
+    """Como http_json, mas pra HTML: sem Accept: application/json (a maioria dos
+    sites recusa isso pra rotas que servem página), e devolve string crua."""
+    pedido = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/html"})
+    try:
+        with urllib.request.urlopen(pedido, timeout=20) as resposta:
+            return resposta.read().decode("utf-8", errors="replace")
+    except Exception:
+        return None
+
+
+def _infojobs_pagina(cidade, uf, home_office, pagina):
+    sufixo = "-trabalho-home-office" if home_office else ""
+    url = f"{INFOJOBS_BASE}/empregos-em-{cidade},-{uf}{sufixo}.aspx?Page={pagina}"
+    conteudo = http_texto(url)
+    if not conteudo:
+        return []
+
+    marcas = list(_INFOJOBS_CARD_RE.finditer(conteudo))
+    vagas = []
+    for i, m in enumerate(marcas):
+        fim = marcas[i + 1].start() if i + 1 < len(marcas) else min(len(conteudo), m.end() + 4000)
+        bloco = conteudo[m.start():fim]
+
+        titulo_m = _INFOJOBS_TITULO_RE.search(bloco)
+        if not titulo_m:
+            continue
+        titulo = html.unescape(titulo_m.group(1)).strip()
+
+        data_m = _INFOJOBS_DATA_RE.search(bloco)
+        publicada_em = (
+            f"{data_m.group(1)}-{data_m.group(2)}-{data_m.group(3)}T{data_m.group(4)}:{data_m.group(5)}:{data_m.group(6)}"
+            if data_m else None
+        )
+
+        empresa_m = _INFOJOBS_EMPRESA_RE.search(bloco)
+        # O selo de "empresa verificada" é um <span> com tooltip cujo atributo
+        # data-bs-title carrega HTML embutido, com '>' dentro do valor — isso
+        # confunde a regex de remover tags (ela para no primeiro '>', que cai
+        # DENTRO do atributo). Cortando ali, o nome da empresa (que sempre vem
+        # antes do selo) já saiu incólume.
+        empresa_bruta = empresa_m.group(1).split("data-bs-title")[0] if empresa_m else ""
+        ultimo_abre, ultimo_fecha = empresa_bruta.rfind("<"), empresa_bruta.rfind(">")
+        if ultimo_abre > ultimo_fecha:  # cortamos no meio de uma tag, sobrou abertura pendurada
+            empresa_bruta = empresa_bruta[:ultimo_abre]
+        empresa = " ".join(_infojobs_texto_limpo(empresa_bruta))
+
+        href = m.group(2)
+        link = href if href.startswith("http") else f"{INFOJOBS_BASE}{href}"
+
+        vagas.append({
+            "link": link,
+            "titulo": titulo,
+            "empresa": empresa,
+            "plataforma": "InfoJobs",
+            "local": f"{cidade.replace('-', ' ').title()} / {uf.upper()}",
+            "modalidade": "remote" if home_office else "on-site",
+            "publicada_em": publicada_em,
+            "salario": "",
+            "busca": "",
+        })
+    return vagas
+
+
+def buscar_infojobs(paginas_por_cidade):
+    tarefas = [
+        (cidade, uf, home_office, pagina)
+        for cidade, uf in INFOJOBS_CIDADES
+        for home_office in (False, True)
+        for pagina in range(1, paginas_por_cidade + 1)
+    ]
+    with ThreadPoolExecutor(max_workers=THREADS) as executor:
+        resultados = list(executor.map(lambda t: _infojobs_pagina(*t), tarefas))
+    return [v for lote in resultados for v in lote]
 
 
 # ---------------------------------------------------------------- InHire
@@ -519,6 +632,13 @@ def main():
         solides = buscar_solides(paginas_solides)
         total_novas += salvar(con, solides, agora)
         log(f"Solides: {len(solides)} vagas.")
+
+    paginas_infojobs = int(config["paginasInfoJobsPorCidade"])
+    if paginas_infojobs > 0:
+        log(f"InfoJobs: puxando {paginas_infojobs} páginas x {len(INFOJOBS_CIDADES)} cidades x 2 modalidades...")
+        infojobs = buscar_infojobs(paginas_infojobs)
+        total_novas += salvar(con, infojobs, agora)
+        log(f"InfoJobs: {len(infojobs)} vagas.")
 
     log("InHire: montando índice de todas as empresas...")
     inhire = preencher_datas_inhire(inhire_indice(), int(config["maxDatasPorExecucao"]))

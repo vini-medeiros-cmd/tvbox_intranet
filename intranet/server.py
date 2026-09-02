@@ -71,7 +71,7 @@ def radar_consultar(params):
         valores += [f"%{termo}%"] * 3
 
     plataforma = (params.get("plataforma", [""])[0] or "").strip()
-    if plataforma in ("Gupy", "InHire", "Solides"):
+    if plataforma in ("Gupy", "InHire", "Solides", "InfoJobs"):
         onde.append("plataforma = ?")
         valores.append(plataforma)
 

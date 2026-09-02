@@ -44,15 +44,16 @@ Acesse em `http://localhost:8080`.
 - **Senhas** — lista simples de credenciais
 - **Infra** — status ao vivo de serviços, tempo ligado e espaço em disco do host
 - **Projetos** — quadro com status, prazo, notas e filtro, com arquivamento automático dos concluídos
-- **Radar de Vagas** — coleta vagas da Gupy, InHire e Sólides e lista por data de publicação
+- **Radar de Vagas** — coleta vagas da Gupy, InHire, Sólides e InfoJobs e lista por data de publicação
 
 Todos os dados ficam em arquivos JSON simples no disco, com backup automático a cada gravação (mantém as últimas 5 versões).
 
 ## Radar de Vagas
 
-Coleta vagas da **Gupy**, da **InHire** e da **Sólides** e guarda num SQLite, para
-você buscar e decidir. Roda na própria box, em [`intranet/radar.py`](./intranet/radar.py) — só
-biblioteca padrão, nada de pip, nada de `node_modules`.
+Coleta vagas da **Gupy**, da **InHire**, da **Sólides** e do **InfoJobs** e guarda
+num SQLite, para você buscar e decidir. Roda na própria box, em
+[`intranet/radar.py`](./intranet/radar.py) — só biblioteca padrão, nada de pip, nada
+de `node_modules`.
 
 ```bash
 cd intranet
@@ -78,7 +79,7 @@ O filtro roda em **SQL, não em JavaScript**. Mandar 20 mil linhas para o navega
 de uma TV box peneirar em memória travaria a página; o SQLite responde em ~20ms e o
 browser nunca recebe mais que 50 linhas.
 
-### Três limites que vêm das APIs, não do script
+### Quatro limites que vêm das origens, não do script
 
 **Gupy:** `offset + limit` precisa ser ≤ 10.000. Sem termo de busca dá para alcançar
 só as **10.000 mais recentes** das 84 mil publicadas. Como a API devolve em ordem de
@@ -111,6 +112,19 @@ inteira: todas as ~8.700 vagas publicadas.
 > A API da InHire responde **403** para User-Agent de cliente HTTP padrão. Sem um UA
 > de navegador, tudo volta vazio e sem erro aparente.
 
+**InfoJobs:** não tem API pública — as vagas vêm embutidas no HTML da página, então
+a coleta é *scraping* (regex sobre o HTML), não leitura de JSON como as outras três.
+Isso é estruturalmente mais frágil: se o InfoJobs mudar o layout do site, a coleta
+quebra sem aviso, ao contrário de uma API versionada.
+
+Também não tem busca nacional — toda URL redireciona por geolocalização do IP pra
+uma cidade (`empregos-em-{cidade}.aspx` sem UF sempre volta pra São Paulo, não
+importa a cidade pedida). Só fica na cidade certa com o UF explícito no slug
+(`empregos-em-belo-horizonte,-mg.aspx`). Sem lista fechada de "tenants" como a
+InHire — são milhares de municípios —, a cobertura fica restrita às principais
+capitais (`INFOJOBS_CIDADES` em `radar.py`), por escolha, não por limite técnico.
+Ajuste essa lista para priorizar outra região.
+
 ### O banco vira o arquivo que a API não te dá
 
 Cada coleta acrescenta; nada é apagado enquanto não envelhece. Como a Gupy só deixa
@@ -140,8 +154,8 @@ leva dois segundos e não erra como um score erraria.
 ### Custo na box
 
 Medido: **55 MB de pico de RAM**, poucos segundos de CPU por rodada (o resto é espera
-de rede), **10 MB** de banco para 20.108 vagas. A coleta das três plataformas leva
-~7 min numa máquina de mesa; na box, espere mais.
+de rede), **10 MB** de banco para 20.108 vagas (antes do InfoJobs). A coleta das
+quatro plataformas leva alguns minutos numa máquina de mesa; na box, espere mais.
 
 ## Aviso de segurança
 
