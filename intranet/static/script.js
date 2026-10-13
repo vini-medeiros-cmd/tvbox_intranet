@@ -1319,4 +1319,4 @@ carregarProjetos();
 carregarProspeccao();
 // carregarFinancas(); — aba oculta a pedido do usuário, gestão feita direto na planilha
 carregarVagas();
-carregarRadar();
+// carregarRadar(); — aba oculta a pedido do usuário
